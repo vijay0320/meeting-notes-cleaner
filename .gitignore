@@ -8,7 +8,7 @@ __pycache__/
 .idea/
 .DS_Store
 
-# Raw data (too large, regenerate with augment_data_v2.py)
+# Raw data (regenerate with augment_data_v2.py)
 ami_annotations/
 ami_train.json
 ami_val.json
@@ -17,14 +17,17 @@ aug_train.json
 aug_val.json
 aug_test.json
 
+# Database (local only)
+meetings.db
+
 # Old versions
 augment_data.py
 train.py
 infer.py
 my_meeting_model/
+my_meeting_model_v2/
 FLAN-T5-BASE.ipynb
 meeting-notes-cleanup.ipynb
 main.py
-my_meeting_model_v2/
-meetings.db
 test_db.py
+app.py
