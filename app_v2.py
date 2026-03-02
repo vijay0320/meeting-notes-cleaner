@@ -1,6 +1,6 @@
 """
 Meeting Notes Cleaner v2
-Features: owner detection, action item tracker (SQLite), priority engine, benchmark
+Features: owner detection, action item tracker (SQLite), priority engine, meeting health score
 """
 
 import warnings
@@ -9,8 +9,8 @@ warnings.filterwarnings("ignore")
 from flask import Flask, render_template_string, request, jsonify
 import re
 import sqlite3
-import json
 from datetime import datetime
+from db import get_all_meetings
 
 app = Flask(__name__)
 DB = "meetings.db"
@@ -71,7 +71,6 @@ TEAM_TOKENS = {"team", "lead", "manager", "director", "engineer", "designer",
                "marketing", "finance", "product", "backend", "frontend", "sales"}
 
 def format_owner(name):
-    """Uppercase acronyms, title-case everything else."""
     words = name.split()
     result = []
     for w in words:
@@ -79,32 +78,24 @@ def format_owner(name):
     return " ".join(result)
 
 def detect_owner(text):
-    # Pattern 1: "Name - ..." or "Name: ..."
     m = re.match(r'^([A-Za-z][a-z]+(?:\s+[A-Za-z][a-z]+)?)\s*[-:]', text)
     if m:
         candidate = m.group(1).strip()
         if candidate.lower() not in {"the", "a", "an", "key", "main", "note", "update"}:
             return format_owner(candidate)
-
-    # Pattern 2: "assigned to Name"
     m = re.search(r'assigned to ([A-Za-z][a-z]+)', text, re.IGNORECASE)
     if m:
         return format_owner(m.group(1))
-
-    # Pattern 3: "Name will/to/should ..."
     m = re.search(r'\b([A-Z][a-z]{2,})\s+(will|to|should|must|needs to)', text)
     if m:
         candidate = m.group(1)
         if candidate.lower() not in TEAM_TOKENS:
             return format_owner(candidate)
-
-    # Pattern 4: team tokens e.g. "dev team", "devops", "marketing"
     for token in ["dev team", "devops", "backend team", "frontend team", "qa team",
                   "marketing", "legal", "finance", "hr", "product team", "sales team",
                   "cto", "cfo", "ceo"]:
         if token in text.lower():
             return format_owner(token)
-
     return None
 
 # ── Note cleaning ─────────────────────────────────────────────────────────────
@@ -183,7 +174,6 @@ textarea:focus { border-color: #444; }
        transition: background 0.15s; margin-top: 14px; margin-right: 8px; }
 .btn:hover { background: #fff; }
 .btn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
-.btn-sm { padding: 5px 12px; font-size: 0.72rem; margin: 0; border-radius: 4px; }
 .btn-ghost { background: transparent; border: 1px solid #333; color: #888; }
 .btn-ghost:hover { background: #222; color: #e8e8e8; }
 .spinner { display: none; margin-top: 14px; font-family: monospace; font-size: 0.8rem; color: #555; }
@@ -211,13 +201,18 @@ textarea:focus { border-color: #444; }
 .status-select { font-size: 0.7rem; font-family: monospace; background: #1a1a1a;
                  color: #888; border: 1px solid #333; border-radius: 3px;
                  padding: 2px 6px; cursor: pointer; outline: none; }
-.item-actions { display: flex; gap: 6px; margin-top: 4px; }
 .error { color: #c0392b; font-family: monospace; font-size: 0.82rem; margin-top: 12px; }
 .meeting-card { padding: 14px 16px; border: 1px solid #2a2a2a; border-radius: 6px;
                 margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
 .meeting-card:hover { border-color: #444; }
-.meeting-card-title { font-size: 0.9rem; color: #ddd; margin-bottom: 4px; }
+.meeting-card-title { font-size: 0.9rem; color: #ddd; margin-bottom: 6px; }
 .meeting-card-meta { font-size: 0.72rem; font-family: monospace; color: #555; }
+.health-badge { display: inline-block; font-family: monospace; font-size: 0.72rem;
+                padding: 2px 8px; border-radius: 3px; margin-top: 6px; }
+.health-green  { background: #1a2e1a; color: #5a9a5a; }
+.health-yellow { background: #2a2a1a; color: #9a9a2a; }
+.health-red    { background: #2e1a1a; color: #c0392b; }
+.health-none   { background: #1a1a1a; color: #444; }
 .meeting-detail { display: none; }
 .save-bar { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
 .empty { color: #444; font-family: monospace; font-size: 0.85rem; padding: 20px 0; }
@@ -226,7 +221,7 @@ textarea:focus { border-color: #444; }
 <body>
 <div class="container">
   <h1>Meeting Notes Cleaner</h1>
-  <p class="subtitle">owner detection &mdash; priority engine &mdash; action tracker &mdash; local sqlite</p>
+  <p class="subtitle">owner detection &mdash; priority engine &mdash; action tracker &mdash; health score</p>
 
   <div class="tabs">
     <div class="tab active" onclick="switchTab('clean')">Clean Notes</div>
@@ -293,7 +288,7 @@ function renderItems(points, container, meetingId) {
           <span class="owner-tag ${p.owner !== 'Unassigned' ? 'assigned' : ''}">
             ${p.owner !== 'Unassigned' ? '👤 ' : ''}${p.owner}
           </span>
-          <select class="status-select" onchange="updateStatus(${meetingId}, ${i}, this.value, '${p.priority}')">
+          <select class="status-select" onchange="updateStatus(${meetingId}, ${i}, this.value)">
             <option value="todo"        ${p.status==='todo'        ?'selected':''}>○ Todo</option>
             <option value="in-progress" ${p.status==='in-progress' ?'selected':''}>◑ In Progress</option>
             <option value="done"        ${p.status==='done'        ?'selected':''}>● Done</option>
@@ -302,6 +297,12 @@ function renderItems(points, container, meetingId) {
       </div>
     </div>
   `).join('');
+}
+
+function renderHealthBadge(health) {
+  if (!health) return '<span class="health-badge health-none">◆ First meeting</span>';
+  const cls = {green: 'health-green', yellow: 'health-yellow', red: 'health-red'}[health.color];
+  return `<span class="health-badge ${cls}">◆ ${health.score}% ${health.label} &mdash; ${health.done}/${health.total} items closed</span>`;
 }
 
 async function processNotes() {
@@ -357,12 +358,11 @@ async function saveMeeting() {
     currentMeetingId = data.id;
     document.getElementById('save-btn').textContent = '✓ Saved';
     document.getElementById('save-btn').disabled = true;
-    // Re-render with real meeting id for status tracking
     renderItems(currentPoints, document.getElementById('output'), data.id);
   }
 }
 
-async function updateStatus(meetingId, itemIndex, status, priority) {
+async function updateStatus(meetingId, itemIndex, status) {
   if (!meetingId || meetingId === 'new') return;
   await fetch('/update_status', {
     method: 'POST', headers: {'Content-Type':'application/json'},
@@ -383,9 +383,12 @@ async function loadHistory() {
   list.innerHTML = data.meetings.map(m => `
     <div class="meeting-card" onclick="loadMeeting(${m.id})">
       <div class="meeting-card-title">${m.title}</div>
-      <div class="meeting-card-meta">${m.created_at} &mdash; ${m.item_count} items
+      <div class="meeting-card-meta">
+        ${m.created_at} &mdash; ${m.item_count} items
         &nbsp;·&nbsp; <span style="color:#c0392b">${m.high_count} high</span>
+        &nbsp;·&nbsp; <span style="color:#5a9a5a">${m.done_count} done</span>
       </div>
+      ${renderHealthBadge(m.health)}
     </div>
   `).join('');
   document.getElementById('meeting-detail').style.display = 'none';
@@ -395,7 +398,7 @@ async function loadMeeting(id) {
   const res = await fetch(`/meeting/${id}`);
   const data = await res.json();
   document.getElementById('detail-title').textContent = data.title;
-  document.getElementById('detail-meta').textContent = data.created_at;
+  document.getElementById('detail-meta').innerHTML = renderHealthBadge(data.health);
   renderItems(data.items, document.getElementById('detail-items'), id);
   document.getElementById('meeting-detail').style.display = 'block';
 }
@@ -466,29 +469,15 @@ def update_status():
 @app.route("/meetings")
 def meetings():
     try:
-        conn = sqlite3.connect(DB)
-        c = conn.cursor()
-        c.execute("""
-            SELECT m.id, m.title, m.created_at,
-                   COUNT(i.id) as item_count,
-                   SUM(CASE WHEN i.priority='high' THEN 1 ELSE 0 END) as high_count
-            FROM meetings m
-            LEFT JOIN items i ON i.meeting_id = m.id
-            GROUP BY m.id ORDER BY m.id DESC
-        """)
-        rows = c.fetchall()
-        conn.close()
-        return jsonify({"meetings": [
-            {"id": r[0], "title": r[1], "created_at": r[2],
-             "item_count": r[3], "high_count": r[4] or 0}
-            for r in rows
-        ]})
+        data = get_all_meetings()
+        return jsonify({"meetings": data})
     except Exception as e:
         return jsonify({"error": str(e)})
 
 @app.route("/meeting/<int:meeting_id>")
 def meeting(meeting_id):
     try:
+        from db import compute_health_score
         conn = sqlite3.connect(DB)
         c = conn.cursor()
         c.execute("SELECT title, created_at FROM meetings WHERE id=?", (meeting_id,))
@@ -498,7 +487,8 @@ def meeting(meeting_id):
         items = [{"text": r[0], "priority": r[1], "owner": r[2], "status": r[3]}
                  for r in c.fetchall()]
         conn.close()
-        return jsonify({"title": m[0], "created_at": m[1], "items": items})
+        health = compute_health_score(meeting_id)
+        return jsonify({"title": m[0], "created_at": m[1], "items": items, "health": health})
     except Exception as e:
         return jsonify({"error": str(e)})
 
