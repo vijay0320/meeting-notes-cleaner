@@ -101,3 +101,46 @@ def get_all_meetings():
             "health":     health
         })
     return meetings
+
+def get_meeting_debt():
+    """
+    Find owners with 3+ HIGH priority items still unresolved across all meetings.
+    Returns list of {owner, open_high, meetings} — sorted by worst first.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+
+    # Get overloaded owners
+    c.execute("""
+        SELECT owner, COUNT(*) as open_high
+        FROM items
+        WHERE priority = 'high'
+        AND status != 'done'
+        AND owner != 'Unassigned'
+        GROUP BY owner
+        HAVING COUNT(*) >= 3
+        ORDER BY open_high DESC
+    """)
+    overloaded = c.fetchall()
+
+    results = []
+    for owner, count in overloaded:
+        # Find which meetings their unresolved items are from
+        c.execute("""
+            SELECT DISTINCT m.title
+            FROM items i
+            JOIN meetings m ON m.id = i.meeting_id
+            WHERE i.owner = ?
+            AND i.priority = 'high'
+            AND i.status != 'done'
+            ORDER BY m.id
+        """, (owner,))
+        meeting_titles = [r[0] for r in c.fetchall()]
+        results.append({
+            "owner": owner,
+            "open_high": count,
+            "meetings": meeting_titles
+        })
+
+    conn.close()
+    return results
