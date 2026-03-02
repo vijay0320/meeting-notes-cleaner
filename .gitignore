@@ -1,0 +1,27 @@
+# Environment
+.venv/
+__pycache__/
+*.pyc
+.python-version
+
+# IDE
+.idea/
+.DS_Store
+
+# Raw data (too large, regenerate with augment_data_v2.py)
+ami_annotations/
+ami_train.json
+ami_val.json
+ami_test.json
+aug_train.json
+aug_val.json
+aug_test.json
+
+# Old versions
+augment_data.py
+train.py
+infer.py
+my_meeting_model/
+FLAN-T5-BASE.ipynb
+meeting-notes-cleanup.ipynb
+main.py
