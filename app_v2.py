@@ -10,7 +10,7 @@ from flask import Flask, render_template_string, request, jsonify
 import re
 import sqlite3
 from datetime import datetime
-from db import get_all_meetings
+from db import get_all_meetings, get_meeting_debt
 
 app = Flask(__name__)
 DB = "meetings.db"
@@ -256,6 +256,7 @@ textarea:focus { border-color: #444; }
   <div class="page" id="page-history">
     <div class="panel">
       <div class="results-title" style="margin-bottom:16px">Saved Meetings</div>
+      <div id="debt-banner"></div>
       <div id="meetings-list"></div>
     </div>
     <div class="panel meeting-detail" id="meeting-detail">
@@ -373,8 +374,35 @@ async function updateStatus(meetingId, itemIndex, status) {
 }
 
 async function loadHistory() {
-  const res = await fetch('/meetings');
-  const data = await res.json();
+  const [meetingsRes, debtRes] = await Promise.all([
+    fetch('/meetings'),
+    fetch('/debt')
+  ]);
+  const data = await meetingsRes.json();
+  const debtData = await debtRes.json();
+
+  // Render debt banner
+  const banner = document.getElementById('debt-banner');
+  if (debtData.debt && debtData.debt.length > 0) {
+    banner.innerHTML = debtData.debt.map(d => `
+      <div style="background:#2e1a1a; border:1px solid #c0392b; border-radius:6px;
+                  padding:12px 16px; margin-bottom:10px;">
+        <div style="font-family:monospace; font-size:0.72rem; color:#c0392b;
+                    letter-spacing:1px; margin-bottom:6px;">⚠ MEETING DEBT</div>
+        <div style="font-size:0.88rem; color:#ddd;">
+          <strong>${d.owner}</strong> has <strong>${d.open_high} unresolved HIGH items</strong>
+          across ${d.meetings.length} meeting${d.meetings.length > 1 ? 's' : ''}
+        </div>
+        <div style="font-family:monospace; font-size:0.72rem; color:#888; margin-top:4px;">
+          ${d.meetings.join(' · ')}
+        </div>
+      </div>
+    `).join('');
+  } else {
+    banner.innerHTML = '';
+  }
+
+  // Render meetings list
   const list = document.getElementById('meetings-list');
   if (!data.meetings.length) {
     list.innerHTML = '<div class="empty">No saved meetings yet.</div>';
@@ -489,6 +517,13 @@ def meeting(meeting_id):
         conn.close()
         health = compute_health_score(meeting_id)
         return jsonify({"title": m[0], "created_at": m[1], "items": items, "health": health})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route("/debt")
+def debt():
+    try:
+        return jsonify({"debt": get_meeting_debt()})
     except Exception as e:
         return jsonify({"error": str(e)})
 
