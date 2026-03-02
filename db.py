@@ -144,3 +144,38 @@ def get_meeting_debt():
 
     conn.close()
     return results
+
+def get_owner_workload():
+    """
+    Returns workload stats per owner across all meetings.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT
+            owner,
+            COUNT(*) as total,
+            SUM(CASE WHEN status != 'done' THEN 1 ELSE 0 END) as open,
+            SUM(CASE WHEN status  = 'done' THEN 1 ELSE 0 END) as done,
+            SUM(CASE WHEN priority = 'high' AND status != 'done' THEN 1 ELSE 0 END) as open_high
+        FROM items
+        GROUP BY owner
+        ORDER BY open_high DESC, open DESC
+    """)
+    rows = c.fetchall()
+    conn.close()
+
+    result = []
+    for r in rows:
+        owner, total, open_count, done_count, open_high = r
+        completion = round((done_count / total) * 100) if total > 0 else 0
+        result.append({
+            "owner":      owner,
+            "total":      total,
+            "open":       open_count,
+            "done":       done_count,
+            "open_high":  open_high,
+            "completion": completion,
+            "overloaded": open_high >= 3 and owner != "Unassigned"
+        })
+    return result

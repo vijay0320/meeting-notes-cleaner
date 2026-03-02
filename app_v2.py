@@ -226,6 +226,7 @@ textarea:focus { border-color: #444; }
   <div class="tabs">
     <div class="tab active" onclick="switchTab('clean')">Clean Notes</div>
     <div class="tab" onclick="switchTab('history')">History</div>
+    <div class="tab" onclick="switchTab('workload')">Workload</div>
   </div>
 
   <!-- ── CLEAN NOTES PAGE ── -->
@@ -252,6 +253,14 @@ textarea:focus { border-color: #444; }
     </div>
   </div>
 
+  <!-- ── WORKLOAD PAGE ── -->
+  <div class="page" id="page-workload">
+    <div class="panel">
+      <div class="results-title" style="margin-bottom:16px">Owner Workload</div>
+      <div id="workload-list"></div>
+    </div>
+  </div>
+
   <!-- ── HISTORY PAGE ── -->
   <div class="page" id="page-history">
     <div class="panel">
@@ -274,9 +283,10 @@ let currentPoints = [];
 let currentMeetingId = null;
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['clean','history'][i] === tab));
-  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', ['clean','history'][i] === tab));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['clean','history','workload'][i] === tab));
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', ['clean','history','workload'][i] === tab));
   if (tab === 'history') loadHistory();
+  if (tab === 'workload') loadWorkload();
 }
 
 function renderItems(points, container, meetingId) {
@@ -431,6 +441,65 @@ async function loadMeeting(id) {
   document.getElementById('meeting-detail').style.display = 'block';
 }
 
+async function loadWorkload() {
+  const res = await fetch('/workload');
+  const data = await res.json();
+  const list = document.getElementById('workload-list');
+
+  if (!data.workload || !data.workload.length) {
+    list.innerHTML = '<div class="empty">No data yet. Save some meetings first.</div>';
+    return;
+  }
+
+  // Table header
+  let html = `
+    <div style="display:grid; grid-template-columns:1fr 60px 60px 60px 80px 100px;
+                gap:8px; padding:8px 12px; font-family:monospace; font-size:0.7rem;
+                color:#555; letter-spacing:1px; border-bottom:1px solid #2a2a2a; margin-bottom:8px;">
+      <span>OWNER</span>
+      <span style="text-align:center">TOTAL</span>
+      <span style="text-align:center">OPEN</span>
+      <span style="text-align:center">DONE</span>
+      <span style="text-align:center">RATE</span>
+      <span style="text-align:center">STATUS</span>
+    </div>
+  `;
+
+  html += data.workload.map(o => {
+    const barWidth = o.completion;
+    const barColor = o.completion >= 80 ? '#5a9a5a' : o.completion >= 50 ? '#9a9a2a' : '#c0392b';
+    const status = o.overloaded
+      ? '<span style="color:#c0392b; font-family:monospace; font-size:0.7rem;">⚠ OVERLOADED</span>'
+      : o.completion === 100
+      ? '<span style="color:#5a9a5a; font-family:monospace; font-size:0.7rem;">✓ CLEAR</span>'
+      : '<span style="color:#555; font-family:monospace; font-size:0.7rem;">— OK</span>';
+
+    return `
+      <div style="display:grid; grid-template-columns:1fr 60px 60px 60px 80px 100px;
+                  gap:8px; padding:12px; border-radius:6px; margin-bottom:6px;
+                  background:${o.overloaded ? '#2e1a1a' : '#1a1a1a'};
+                  border:1px solid ${o.overloaded ? '#c0392b44' : '#2a2a2a'};">
+        <div>
+          <div style="font-size:0.88rem; color:#ddd; margin-bottom:4px;">
+            ${o.owner !== 'Unassigned' ? '👤 ' : ''}${o.owner}
+          </div>
+          <div style="background:#111; border-radius:2px; height:3px; width:100%;">
+            <div style="background:${barColor}; width:${barWidth}%; height:3px; border-radius:2px;
+                        transition:width 0.3s;"></div>
+          </div>
+        </div>
+        <span style="text-align:center; font-family:monospace; font-size:0.85rem; color:#888; padding-top:2px;">${o.total}</span>
+        <span style="text-align:center; font-family:monospace; font-size:0.85rem; color:#c0392b; padding-top:2px;">${o.open}</span>
+        <span style="text-align:center; font-family:monospace; font-size:0.85rem; color:#5a9a5a; padding-top:2px;">${o.done}</span>
+        <span style="text-align:center; font-family:monospace; font-size:0.85rem; color:#aaa; padding-top:2px;">${o.completion}%</span>
+        <span style="text-align:center; padding-top:2px;">${status}</span>
+      </div>
+    `;
+  }).join('');
+
+  list.innerHTML = html;
+}
+
 document.getElementById('notes').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.ctrlKey) processNotes();
 });
@@ -517,6 +586,14 @@ def meeting(meeting_id):
         conn.close()
         health = compute_health_score(meeting_id)
         return jsonify({"title": m[0], "created_at": m[1], "items": items, "health": health})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route("/workload")
+def workload():
+    try:
+        from db import get_owner_workload
+        return jsonify({"workload": get_owner_workload()})
     except Exception as e:
         return jsonify({"error": str(e)})
 
