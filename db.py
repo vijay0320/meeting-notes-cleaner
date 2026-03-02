@@ -1,0 +1,103 @@
+"""
+db.py — all database queries in one place
+"""
+import sqlite3
+
+DB = "meetings.db"
+
+def get_connection():
+    return sqlite3.connect(DB)
+
+def compute_health_score(meeting_id):
+    """
+    Health score = % of items from the PREVIOUS meeting that are 'done'.
+    Returns dict with score (0-100), done count, total count, and label.
+    Returns None if this is the first meeting (no previous to compare).
+    """
+    conn = get_connection()
+    c = conn.cursor()
+
+    # Find the previous meeting id
+    c.execute("""
+        SELECT id FROM meetings
+        WHERE id < ?
+        ORDER BY id DESC
+        LIMIT 1
+    """, (meeting_id,))
+    row = c.fetchone()
+
+    if not row:
+        conn.close()
+        return None  # first meeting, no score yet
+
+    prev_meeting_id = row[0]
+
+    # Count total and done items from previous meeting
+    c.execute("""
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as done
+        FROM items
+        WHERE meeting_id = ?
+    """, (prev_meeting_id,))
+    result = c.fetchone()
+    conn.close()
+
+    total = result[0] or 0
+    done  = result[1] or 0
+
+    if total == 0:
+        return None  # previous meeting had no items
+
+    score = round((done / total) * 100)
+
+    # Label based on score
+    if score >= 80:
+        label = "Healthy"
+        color = "green"
+    elif score >= 50:
+        label = "Moderate"
+        color = "yellow"
+    else:
+        label = "At Risk"
+        color = "red"
+
+    return {
+        "score": score,
+        "done": done,
+        "total": total,
+        "label": label,
+        "color": color
+    }
+
+def get_all_meetings():
+    """Get all meetings with item counts and health scores."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT m.id, m.title, m.created_at,
+               COUNT(i.id) as item_count,
+               SUM(CASE WHEN i.priority = 'high' THEN 1 ELSE 0 END) as high_count,
+               SUM(CASE WHEN i.status = 'done' THEN 1 ELSE 0 END) as done_count
+        FROM meetings m
+        LEFT JOIN items i ON i.meeting_id = m.id
+        GROUP BY m.id
+        ORDER BY m.id DESC
+    """)
+    rows = c.fetchall()
+    conn.close()
+
+    meetings = []
+    for r in rows:
+        meeting_id = r[0]
+        health = compute_health_score(meeting_id)
+        meetings.append({
+            "id":         meeting_id,
+            "title":      r[1],
+            "created_at": r[2],
+            "item_count": r[3],
+            "high_count": r[4] or 0,
+            "done_count": r[5] or 0,
+            "health":     health
+        })
+    return meetings

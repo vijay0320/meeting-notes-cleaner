@@ -26,3 +26,5 @@ FLAN-T5-BASE.ipynb
 meeting-notes-cleanup.ipynb
 main.py
 my_meeting_model_v2/
+meetings.db
+test_db.py
