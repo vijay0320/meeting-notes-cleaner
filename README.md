@@ -10,6 +10,14 @@
 
 ---
 
+## Demo
+
+▶ [Watch the full demo on Loom](https://www.loom.com/share/78aefbd7dca143e39f5515a3b99d465e)
+
+[![Demo](https://img.shields.io/badge/Demo-Watch%20on%20Loom-orange)](https://www.loom.com/share/78aefbd7dca143e39f5515a3b99d465e)
+
+---
+
 ## The Problem
 
 Meeting notes are messy. Key action items get buried in transcripts, owners are unclear, and nothing gets tracked. Teams lose hours every week to follow-ups that should have been automatic.
@@ -126,25 +134,33 @@ Handles acronym formatting: CTO, QA, HR, CEO, API, UI, UX.
 
 ---
 
-## Demo
+## Demo Input/Output
 
-**Input — raw messy notes:**
+**Input — raw messy notes (no names, typos, abbreviations):**
 ```
-priya - blocked on API spec from backend, needs it asap or sprint is at risk
-deployment pipeline broke last night, devops investigating, critical blocker
-sara - design review scheduled thursday, needs sign off from product before then
-john - finished auth module, pushing to staging today
-budget approval needed before EOD for Q2 tooling spend
+api intgration still brken since lst nite deploy cant process any paymnts before mkt opens tmrw critical
+ssl cert expirng in 2 days if it goes down whole site dies needs renewl asap
+db migration script rdy waitng 4 approval 2 run on prod needs sign off b4 eod
+onboarding drpout rate hit 60pct new enterpise clients leavng during setup product team shld fix this
+q2 infra budget needs cfo approval by fri or we lose the cloud credits
+new hire still no laptop no access 3rd day someone needs 2 sort this out
+checkout flow 3sec lag all users sloww query flagged by backend investigate pls
+retro notes frm lst wk still not shared wit the team
 ```
 
 **Output — cleaned and prioritized:**
 ```
-HIGH  👤 Priya    Priya: blocked on API spec, needs it asap or sprint is at risk.
-HIGH  👤 Devops   Deployment pipeline broke last night, critical blocker.
-HIGH  👤 Unassigned  Budget approval needed before EOD for Q2 tooling spend.
-MED   👤 Sara     Sara: design review thursday, needs sign off from product.
-LOW   👤 John     John: finished auth module, pushing to staging today.
+HIGH   Api intgration still brken since lst nite deploy, critical.
+HIGH   Ssl cert expirng in 2 days, needs renewl asap.
+HIGH   Db migration script rdy, needs sign off b4 eod.
+MED    Q2 infra budget needs cfo approval by fri.
+MED    New hire still no laptop, someone needs 2 sort this out.
+MED    Checkout flow 3sec lag, investigate pls.
+LOW    Onboarding drpout rate hit 60pct, product team shld fix this.
+LOW    Retro notes frm lst wk still not shared.
 ```
+
+Priority engine correctly identifies HIGH items despite typos (`brken`, `expirng`) and abbreviations (`asap`, `eod`, `tmrw`).
 
 ---
 
@@ -239,6 +255,8 @@ python train_v2.py
 
 ## MeetingMind — Multi-User SaaS (`meetingmind/`)
 
+▶ [Watch MeetingMind demo on Loom](https://www.loom.com/share/78aefbd7dca143e39f5515a3b99d465e)
+
 Built on top of the notes cleaner. Teams collaborate — managers clean notes and assign tasks, members see their tasks and update progress in real time.
 
 ### Features
@@ -288,6 +306,40 @@ uvicorn meetingmind.main:app --port 8091 --host 127.0.0.1
 
 ---
 
+## Project Structure
+
+```
+meeting-notes-cleaner/
+├── app_v2.py               # Flask app — single user
+├── api.py                  # FastAPI version
+├── db.py                   # SQLite queries
+├── train_v2.py             # Fine-tune flan-t5-small
+├── augment_data_v2.py      # Synthetic data generation
+├── benchmark.py            # Priority engine benchmark
+├── rouge_eval.py           # ROUGE evaluation
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+├── static/index.html       # Single-user UI
+├── tests/                  # 43 unit tests
+├── .github/workflows/      # CI/CD
+└── meetingmind/            # Multi-user SaaS
+    ├── main.py             # FastAPI backend
+    ├── auth.py             # JWT + bcrypt
+    ├── db.py               # Schema + queries
+    ├── models.py           # Pydantic models
+    ├── email.py            # Email notifications
+    ├── .env                # Secrets (gitignored)
+    └── static/
+        ├── landing.html
+        ├── login.html
+        ├── register.html
+        ├── dashboard.html
+        └── tasks.html
+```
+
+---
+
 ## Version History
 
 | Version | What was added |
@@ -310,5 +362,5 @@ uvicorn meetingmind.main:app --port 8091 --host 127.0.0.1
 | v16.0 | Real-time updates via SSE |
 | v17.0 | Manager workload view + member detail panel |
 | v18.0 | Email notifications |
-| v19.0 | README update |
-| v20.0 | Python as primary language (.gitattributes) |
+| v19.0 — v21.0 | README updates, .gitattributes, ML-first rewrite |
+| v22.0 | Demo video added |
