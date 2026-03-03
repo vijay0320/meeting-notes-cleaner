@@ -397,6 +397,28 @@ def team_members(current=Depends(require_manager)):
         result.append(m)
     return {"members": result}
 
+
+@app.get("/team/members/{member_id}/items", tags=["Team"])
+def member_items(member_id: int, current=Depends(require_manager)):
+    user, _ = current
+    conn = get_conn()
+    member = conn.execute(
+        "SELECT id, name FROM users WHERE id = ? AND team_id = ?",
+        (member_id, user["team_id"])
+    ).fetchone()
+    if not member:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Member not found")
+    items = conn.execute("""
+        SELECT i.*, m.title as meeting_title
+        FROM items i JOIN meetings m ON m.id = i.meeting_id
+        WHERE i.owner_id = ?
+        ORDER BY CASE i.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
+                 CASE i.status WHEN 'todo' THEN 0 WHEN 'in-progress' THEN 1 ELSE 2 END
+    """, (member_id,)).fetchall()
+    conn.close()
+    return {"member": dict(member), "items": [dict(i) for i in items]}
+
 @app.get("/team/code", tags=["Team"])
 def team_code(current=Depends(require_manager)):
     user, _ = current
