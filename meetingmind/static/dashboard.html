@@ -985,15 +985,33 @@
         // ── SAVE MEETING ──
         async function saveMeeting() {
             const title = document.getElementById('meeting-title').value.trim() || 'Untitled Meeting';
-            const notes = document.getElementById('meeting-notes').value.trim();
+
+            // Build items with owner assignments from dropdowns
+            const itemsWithOwners = currentPoints.map((p, i) => {
+                const select = document.getElementById('assign-' + i);
+                const ownerId = select && select.value ? parseInt(select.value) : null;
+                const ownerName = select && select.value ?
+                    select.options[select.selectedIndex].text : null;
+                return {
+                    text: p.text,
+                    priority: p.priority,
+                    owner_id: ownerId,
+                    owner_name: ownerName,
+                    status: 'todo'
+                };
+            });
+
             const res = await fetch('/meetings/save', {
                 method: 'POST', headers: authHeaders(),
-                body: JSON.stringify({ title, notes })
+                body: JSON.stringify({ title, items: itemsWithOwners })
             });
             if (res.ok) {
                 document.getElementById('save-btn').textContent = '✓ Saved';
                 document.getElementById('save-btn').disabled = true;
                 loadStats();
+            } else {
+                const data = await res.json();
+                document.getElementById('process-error').textContent = data.detail || 'Save failed.';
             }
         }
 

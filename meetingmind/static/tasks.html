@@ -458,7 +458,7 @@
         }
 
         async function loadTasks() {
-            const res = await fetch('/tasks', { headers: authHeaders() });
+            const res = await fetch('/api/tasks', { headers: authHeaders() });
             const data = await res.json();
             const tasks = data.tasks || [];
 
