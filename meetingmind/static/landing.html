@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeetingMind — AI Meeting Intelligence</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        :root {
+            --bg: #080808;
+            --bg2: #0f0f0f;
+            --bg3: #161616;
+            --border: #1e1e1e;
+            --text: #f0f0f0;
+            --text2: #888;
+            --text3: #444;
+            --accent: #e8ff47;
+            --accent2: #ff4757;
+            --accent3: #47c8ff;
+            --card: #111111;
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f5f0;
+            --bg2: #efefea;
+            --bg3: #e8e8e3;
+            --border: #ddddd8;
+            --text: #0a0a0a;
+            --text2: #555;
+            --text3: #aaa;
+            --accent: #1a1a1a;
+            --accent2: #c0392b;
+            --accent3: #0066cc;
+            --card: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            transition: background 0.4s, color 0.4s;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 48px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            transition: background 0.4s;
+        }
+
+        .nav-logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text2);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .theme-toggle {
+            width: 40px;
+            height: 22px;
+            background: var(--border);
+            border-radius: 11px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            padding: 3px;
+        }
+
+        .theme-toggle::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text);
+            transition: transform 0.3s;
+        }
+
+        [data-theme="light"] .theme-toggle::after {
+            transform: translateX(18px);
+        }
+
+        .nav-cta {
+            padding: 8px 20px;
+            background: var(--accent);
+            color: var(--bg);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .nav-cta:hover {
+            opacity: 0.85;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            min-height: 100vh;
+            padding: 140px 48px 80px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: radial-gradient(ellipse 60% 50% at 70% 50%, rgba(232, 255, 71, 0.04) 0%, transparent 70%);
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 48px 48px;
+            opacity: 0.4;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
+        }
+
+        .hero-left {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.7rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text2);
+            margin-bottom: 32px;
+            opacity: 0;
+        }
+
+        .hero-tag-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(3rem, 5vw, 5.5rem);
+            font-weight: 800;
+            line-height: 0.95;
+            letter-spacing: -3px;
+            margin-bottom: 28px;
+            opacity: 0;
+        }
+
+        h1 em {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            font-weight: 400;
+            color: var(--accent);
+        }
+
+        .hero-desc {
+            font-size: 0.88rem;
+            line-height: 1.8;
+            color: var(--text2);
+            max-width: 440px;
+            margin-bottom: 40px;
+            opacity: 0;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            opacity: 0;
+        }
+
+        .btn-primary {
+            padding: 14px 32px;
+            background: var(--accent);
+            color: var(--bg);
+            border-radius: 4px;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            transition: transform 0.2s, opacity 0.2s;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            font-size: 0.78rem;
+            color: var(--text2);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s;
+        }
+
+        .btn-secondary:hover {
+            color: var(--text);
+        }
+
+        .btn-secondary::after {
+            content: '→';
+            transition: transform 0.2s;
+        }
+
+        .btn-secondary:hover::after {
+            transform: translateX(4px);
+        }
+
+        /* ── HERO RIGHT — LIVE DEMO ── */
+        .hero-right {
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+        }
+
+        .demo-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        .demo-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .demo-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .demo-body {
+            padding: 20px;
+        }
+
+        .demo-input {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text2);
+            line-height: 1.7;
+            margin-bottom: 16px;
+            min-height: 90px;
+        }
+
+        .demo-output {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .demo-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border-left: 3px solid transparent;
+            font-size: 0.72rem;
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .demo-item.high {
+            background: rgba(255, 71, 87, 0.08);
+            border-left-color: #ff4757;
+        }
+
+        .demo-item.medium {
+            background: rgba(71, 200, 255, 0.06);
+            border-left-color: #47c8ff;
+        }
+
+        .demo-item.low {
+            background: rgba(232, 255, 71, 0.05);
+            border-left-color: var(--accent);
+        }
+
+        .demo-badge {
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        .high .demo-badge {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        .medium .demo-badge {
+            background: #47c8ff22;
+            color: #47c8ff;
+            border: 1px solid #47c8ff44;
+        }
+
+        .low .demo-badge {
+            background: rgba(232, 255, 71, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(232, 255, 71, 0.2);
+        }
+
+        .demo-item-text {
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .demo-item-owner {
+            font-size: 0.65rem;
+            color: var(--text3);
+            margin-top: 2px;
+        }
+
+        /* ── STATS BAR ── */
+        .stats-bar {
+            padding: 32px 48px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+        }
+
+        .stat {
+            padding: 0 40px;
+            border-right: 1px solid var(--border);
+            opacity: 0;
+        }
+
+        .stat:first-child {
+            padding-left: 0;
+        }
+
+        .stat:last-child {
+            border-right: none;
+        }
+
+        .stat-num {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            color: var(--text);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-num span {
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        /* ── FEATURES ── */
+        .features {
+            padding: 100px 48px;
+        }
+
+        .section-tag {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2rem, 3.5vw, 3.5rem);
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 60px;
+            max-width: 600px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .feature-card {
+            background: var(--card);
+            padding: 36px 32px;
+            transition: background 0.2s;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .feature-card:hover {
+            background: var(--bg3);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .feature-desc {
+            font-size: 0.78rem;
+            color: var(--text2);
+            line-height: 1.7;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            margin-top: 16px;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent);
+            border: 1px solid rgba(232, 255, 71, 0.2);
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+
+        /* ── ROLES ── */
+        .roles {
+            padding: 100px 48px;
+            background: var(--bg2);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .roles-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .role-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+        }
+
+        .role-card.manager::before {
+            background: var(--accent);
+        }
+
+        .role-card.member::before {
+            background: var(--accent3);
+        }
+
+        .role-label {
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 12px;
+        }
+
+        .role-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 20px;
+        }
+
+        .role-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .role-features li {
+            font-size: 0.78rem;
+            color: var(--text2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            line-height: 1.5;
+        }
+
+        .role-features li::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--text3);
+            flex-shrink: 0;
+        }
+
+        /* ── HOW IT WORKS ── */
+        .how {
+            padding: 100px 48px;
+        }
+
+        .how-steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            margin-top: 60px;
+            position: relative;
+        }
+
+        .how-steps::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 12.5%;
+            right: 12.5%;
+            height: 1px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .how-step {
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+        }
+
+        .step-num {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text2);
+        }
+
+        .how-step.active .step-num {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .step-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .step-desc {
+            font-size: 0.75rem;
+            color: var(--text2);
+            line-height: 1.7;
+        }
+
+        /* ── CTA ── */
+        .cta-section {
+            padding: 120px 48px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-bg {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(232, 255, 71, 0.05) 0%, transparent 70%);
+        }
+
+        .cta-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2.5rem, 5vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -3px;
+            line-height: 0.95;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+        }
+
+        .cta-title em {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 400;
+        }
+
+        .cta-sub {
+            font-size: 0.85rem;
+            color: var(--text2);
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+        }
+
+        .cta-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            padding: 32px 48px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-left {
+            font-size: 0.72rem;
+            color: var(--text3);
+        }
+
+        .footer-right {
+            font-size: 0.72rem;
+            color: var(--text3);
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-right a {
+            color: var(--text3);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-right a:hover {
+            color: var(--text2);
+        }
+
+        /* ── CURSOR ── */
+        .cursor {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s;
+            mix-blend-mode: difference;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="cursor" id="cursor"></div>
+
+    <!-- NAV -->
+    <nav>
+        <div class="nav-logo">
+            <span class="logo-dot"></span>
+            MeetingMind
+        </div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#roles">Roles</a>
+            <a href="#how">How it works</a>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+            <a href="register.html" class="nav-cta">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-grid"></div>
+        <div class="hero-left">
+            <div class="hero-tag" id="hero-tag">
+                <span class="hero-tag-dot"></span>
+                AI-powered meeting intelligence
+            </div>
+            <h1 id="hero-title">Turn <em>chaos</em> into clarity</h1>
+            <p class="hero-desc" id="hero-desc">
+                MeetingMind transforms messy meeting notes into structured action items, assigns tasks to your team, and
+                tracks progress — all powered by local AI with no data leaving your machine.
+            </p>
+            <div class="hero-actions" id="hero-actions">
+                <a href="register.html" class="btn-primary">Start for free</a>
+                <a href="#how" class="btn-secondary">See how it works</a>
+            </div>
+        </div>
+        <div class="hero-right" id="hero-right">
+            <div class="demo-card">
+                <div class="demo-header">
+                    <div class="demo-dot" style="background:#ff5f57"></div>
+                    <div class="demo-dot" style="background:#febc2e"></div>
+                    <div class="demo-dot" style="background:#28c840"></div>
+                    <span style="font-size:0.7rem; color:var(--text3); margin-left:8px; letter-spacing:0.5px">Sprint
+                        Planning — March 3</span>
+                </div>
+                <div class="demo-body">
+                    <div class="demo-input">troy - blocked on api spec asap sprint at risk<br>pipeline broke critical
+                        blocker devops<br>sara design review thursday sign off needed<br>john finished auth module
+                        pushing staging</div>
+                    <div class="demo-output" id="demo-output">
+                        <div class="demo-item high" id="d1">
+                            <span class="demo-badge">HIGH</span>
+                            <div>
+                                <div class="demo-item-text">Troy: blocked on API spec, sprint at risk.</div>
+                                <div class="demo-item-owner">👤 Troy</div>
+                            </div>
+                        </div>
+                        <div class="demo-item high" id="d2">
+                            <span class="demo-badge">HIGH</span>
+                            <div>
+                                <div class="demo-item-text">Deployment pipeline broke, critical blocker.</div>
+                                <div class="demo-item-owner">👤 Devops</div>
+                            </div>
+                        </div>
+                        <div class="demo-item medium" id="d3">
+                            <span class="demo-badge">MED</span>
+                            <div>
+                                <div class="demo-item-text">Sara: design review thursday, needs sign off.</div>
+                                <div class="demo-item-owner">👤 Sara</div>
+                            </div>
+                        </div>
+                        <div class="demo-item low" id="d4">
+                            <span class="demo-badge">LOW</span>
+                            <div>
+                                <div class="demo-item-text">John: finished auth module, pushing to staging.</div>
+                                <div class="demo-item-owner">👤 John</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <div class="stats-bar" id="stats-bar">
+        <div class="stat" id="s1">
+            <div class="stat-num">99<span>%</span></div>
+            <div class="stat-label">Priority accuracy</div>
+        </div>
+        <div class="stat" id="s2">
+            <div class="stat-num">4<span>x</span></div>
+            <div class="stat-label">Faster task assignment</div>
+        </div>
+        <div class="stat" id="s3">
+            <div class="stat-num">0<span>$</span></div>
+            <div class="stat-label">API cost — runs local</div>
+        </div>
+        <div class="stat" id="s4">
+            <div class="stat-num">11<span>+</span></div>
+            <div class="stat-label">Features shipped</div>
+        </div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="features" id="features">
+        <div class="section-tag">What we do</div>
+        <h2 class="section-title">Everything your team needs from a meeting</h2>
+        <div class="features-grid">
+            <div class="feature-card" id="f1">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">AI Note Cleaning</div>
+                <div class="feature-desc">Paste raw messy transcripts. Our fine-tuned model extracts clean action items
+                    instantly.</div>
+                <span class="feature-tag">flan-t5-small</span>
+            </div>
+            <div class="feature-card" id="f2">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">Priority Detection</div>
+                <div class="feature-desc">99.7% accurate priority engine flags HIGH, MEDIUM and LOW items automatically
+                    from context.</div>
+                <span class="feature-tag">99.7% accuracy</span>
+            </div>
+            <div class="feature-card" id="f3">
+                <div class="feature-icon">👤</div>
+                <div class="feature-title">Owner Detection</div>
+                <div class="feature-desc">Automatically extracts who owns each task from 4 natural language patterns.
+                </div>
+                <span class="feature-tag">4 patterns</span>
+            </div>
+            <div class="feature-card" id="f4">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Meeting Health Score</div>
+                <div class="feature-desc">Tracks what % of last meeting's items were resolved before the next one. Holds
+                    teams accountable.</div>
+                <span class="feature-tag">cross-meeting</span>
+            </div>
+            <div class="feature-card" id="f5">
+                <div class="feature-icon">⚠️</div>
+                <div class="feature-title">Meeting Debt</div>
+                <div class="feature-desc">Flags owners with 3+ unresolved HIGH items across meetings. Spot bottlenecks
+                    before they explode.</div>
+                <span class="feature-tag">novel feature</span>
+            </div>
+            <div class="feature-card" id="f6">
+                <div class="feature-icon">🎙️</div>
+                <div class="feature-title">Audio Transcription</div>
+                <div class="feature-desc">Record meetings directly in the browser. Whisper transcribes locally — no
+                    audio leaves your device.</div>
+                <span class="feature-tag">whisper base</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROLES -->
+    <section class="roles" id="roles">
+        <div class="section-tag">Built for teams</div>
+        <h2 class="section-title">Two roles, one system</h2>
+        <div class="roles-grid">
+            <div class="role-card manager" id="r1">
+                <div class="role-label">Role 01</div>
+                <div class="role-title">Manager</div>
+                <ul class="role-features">
+                    <li>Take and clean meeting notes with AI</li>
+                    <li>Assign action items to team members</li>
+                    <li>View all members' progress in one dashboard</li>
+                    <li>Track meeting health scores over time</li>
+                    <li>Get alerted to meeting debt and overloaded owners</li>
+                    <li>Export meeting summaries to PDF or Markdown</li>
+                </ul>
+            </div>
+            <div class="role-card member" id="r2">
+                <div class="role-label">Role 02</div>
+                <div class="role-title">Team Member</div>
+                <ul class="role-features">
+                    <li>Log in to see only your assigned tasks</li>
+                    <li>Mark tasks as Todo, In Progress or Done</li>
+                    <li>See priority level for each action item</li>
+                    <li>Get notified when new tasks are assigned</li>
+                    <li>View your personal completion rate</li>
+                    <li>Flag blockers back to the manager</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how" id="how">
+        <div class="section-tag">The flow</div>
+        <h2 class="section-title">From messy notes to team clarity in seconds</h2>
+        <div class="how-steps">
+            <div class="how-step active" id="h1">
+                <div class="step-num">01</div>
+                <div class="step-title">Take notes</div>
+                <div class="step-desc">Paste raw meeting notes or record audio directly. No formatting required.</div>
+            </div>
+            <div class="how-step" id="h2">
+                <div class="step-num">02</div>
+                <div class="step-title">AI cleans</div>
+                <div class="step-desc">Model extracts action items, detects priority and identifies owners
+                    automatically.</div>
+            </div>
+            <div class="how-step" id="h3">
+                <div class="step-num">03</div>
+                <div class="step-title">Assign tasks</div>
+                <div class="step-desc">Manager confirms assignments. Team members instantly see their tasks on login.
+                </div>
+            </div>
+            <div class="how-step" id="h4">
+                <div class="step-num">04</div>
+                <div class="step-title">Track progress</div>
+                <div class="step-desc">Dashboard shows real-time status, health scores and debt warnings across all
+                    meetings.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="cta-bg"></div>
+        <h2 class="cta-title" id="cta-title">Ready to fix your<br><em>meeting culture?</em></h2>
+        <p class="cta-sub" id="cta-sub">Local AI. No API costs. No data leaving your machine.</p>
+        <div class="cta-actions" id="cta-actions">
+            <a href="register.html" class="btn-primary">Get started free</a>
+            <a href="https://github.com/vijay0320/meeting-notes-cleaner" class="btn-secondary" target="_blank">View on
+                GitHub</a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-left">© 2026 MeetingMind. Built with flan-t5-small + Whisper.</div>
+        <div class="footer-right">
+            <a href="https://github.com/vijay0320/meeting-notes-cleaner" target="_blank">GitHub</a>
+            <a href="#">Docs</a>
+            <a href="#">Privacy</a>
+        </div>
+    </footer>
+
+    <script>
+        // ── CURSOR ──
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX - 4 + 'px';
+            cursor.style.top = e.clientY - 4 + 'px';
+        });
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.style.transform = 'scale(3)');
+            el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
+        });
+
+        // ── THEME TOGGLE ──
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        }
+
+        // ── HERO ANIMATIONS ──
+        anime.timeline({ easing: 'easeOutExpo' })
+            .add({ targets: '#hero-tag', opacity: [0, 1], translateY: [10, 0], duration: 600 })
+            .add({ targets: '#hero-title', opacity: [0, 1], translateY: [30, 0], duration: 800 }, '-=200')
+            .add({ targets: '#hero-desc', opacity: [0, 1], translateY: [20, 0], duration: 600 }, '-=400')
+            .add({ targets: '#hero-actions', opacity: [0, 1], translateY: [10, 0], duration: 500 }, '-=300')
+            .add({ targets: '#hero-right', opacity: [0, 1], translateX: [40, 0], duration: 800 }, '-=600');
+
+        // Demo items stagger
+        anime({
+            targets: '.demo-item',
+            opacity: [0, 1],
+            translateX: [20, 0],
+            delay: anime.stagger(150, { start: 800 }),
+            easing: 'easeOutExpo',
+            duration: 600
+        });
+
+        // ── SCROLL ANIMATIONS ──
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const el = entry.target;
+
+                if (el.classList.contains('stat')) {
+                    anime({ targets: el, opacity: [0, 1], translateY: [20, 0], duration: 600, easing: 'easeOutExpo' });
+                }
+                if (el.classList.contains('feature-card')) {
+                    anime({ targets: el, opacity: [0, 1], translateY: [20, 0], duration: 600, easing: 'easeOutExpo', delay: parseInt(el.id.replace('f', '')) * 80 });
+                }
+                if (el.classList.contains('role-card')) {
+                    anime({ targets: el, opacity: [0, 1], translateY: [30, 0], duration: 700, easing: 'easeOutExpo' });
+                }
+                if (el.classList.contains('how-step')) {
+                    anime({ targets: el, opacity: [0, 1], translateY: [20, 0], duration: 600, easing: 'easeOutExpo', delay: parseInt(el.id.replace('h', '')) * 100 });
+                }
+                if (el.id === 'cta-title') {
+                    anime.timeline({ easing: 'easeOutExpo' })
+                        .add({ targets: '#cta-title', opacity: [0, 1], translateY: [30, 0], duration: 700 })
+                        .add({ targets: '#cta-sub', opacity: [0, 1], translateY: [10, 0], duration: 500 }, '-=300')
+                        .add({ targets: '#cta-actions', opacity: [0, 1], translateY: [10, 0], duration: 500 }, '-=200');
+                }
+                observer.unobserve(el);
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.stat, .feature-card, .role-card, .how-step, #cta-title').forEach(el => observer.observe(el));
+
+        // ── DEMO LOOP ANIMATION ──
+        setInterval(() => {
+            anime({
+                targets: '.demo-item',
+                opacity: [1, 0.6, 1],
+                duration: 2000,
+                delay: anime.stagger(300),
+                easing: 'easeInOutSine'
+            });
+        }, 4000);
+    </script>
+</body>
+
+</html>
