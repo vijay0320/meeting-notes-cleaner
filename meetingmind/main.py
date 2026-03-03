@@ -27,6 +27,7 @@ from meetingmind.auth import (
     is_account_locked, record_failed_login, reset_failed_logins,
     cleanup_expired_tokens
 )
+from meetingmind.email import (notify_task_assigned, notify_all_tasks_complete, notify_overdue_items)
 from meetingmind.models import (
     RegisterRequest, LoginRequest, TokenResponse, RefreshRequest,
     UserResponse, ProcessNotesRequest, ItemAssignRequest,
@@ -304,7 +305,7 @@ def process_notes(req: ProcessNotesRequest, current=Depends(require_manager)):
     return {"title": req.title, "points": items}
 
 @app.post("/meetings/save", tags=["Meetings"])
-def save_meeting(req: SaveMeetingRequest, current=Depends(require_manager)):
+async def save_meeting(req: SaveMeetingRequest, current=Depends(require_manager)):
     user, _ = current
     conn = get_conn()
     conn.execute("INSERT INTO meetings (title, manager_id, team_id) VALUES (?, ?, ?)",
@@ -317,6 +318,12 @@ def save_meeting(req: SaveMeetingRequest, current=Depends(require_manager)):
             (meeting_id, item.text, item.priority, item.owner_id, item.owner_name, item.status)
         )
     conn.commit()
+    # Email assigned members
+    for item in req.items:
+        if item.owner_id:
+            member = conn.execute("SELECT email, name FROM users WHERE id = ?", (item.owner_id,)).fetchone()
+            if member:
+                await notify_task_assigned(member_email=member["email"], member_name=member["name"], item_text=item.text, priority=item.priority, meeting_title=req.title, manager_name=user["name"])
     conn.close()
     return {"id": meeting_id}
 
@@ -348,6 +355,12 @@ async def update_status(item_id: int, req: UpdateStatusRequest, current=Depends(
         raise HTTPException(status_code=403, detail="You can only update your own items")
     conn.execute("UPDATE items SET status = ? WHERE id = ?", (req.status, item_id))
     conn.commit()
+    if req.status == "done" and user["role"] == "member":
+        all_items = conn.execute("SELECT status FROM items WHERE owner_id = ?", (user["id"],)).fetchall()
+        if all_items and all(i["status"] == "done" for i in all_items):
+            manager = conn.execute("SELECT email, name FROM users WHERE team_id = ? AND role = 'manager' LIMIT 1", (user["team_id"],)).fetchone()
+            if manager:
+                await notify_all_tasks_complete(member_email=user["email"], member_name=user["name"], manager_email=manager["email"], manager_name=manager["name"], total=len(all_items))
     conn.close()
 
     # Broadcast to all connected clients on this team
