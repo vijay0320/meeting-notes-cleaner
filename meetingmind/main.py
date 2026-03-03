@@ -1,18 +1,19 @@
 """
 meetingmind/main.py — FastAPI backend for MeetingMind
-Multi-user, JWT auth, role-based access
-Run: uvicorn meetingmind.main:app --reload --port 8091
-Docs: http://localhost:8091/docs
+Multi-user, JWT auth, role-based access, SSE real-time updates
 """
 import os
 import re
 import string
 import random
+import asyncio
+import json
 from datetime import datetime, timezone
 from typing import Optional, List
+from collections import defaultdict
 
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -50,7 +51,20 @@ def startup():
     init_db()
     print("MeetingMind started.")
 
-# ── Pydantic models for save ──────────────────────────────────────────────────
+# ── Real-time event store ─────────────────────────────────────────────────────
+team_queues: dict = defaultdict(list)
+
+async def broadcast(team_id: int, event: dict):
+    dead = []
+    for q in team_queues[team_id]:
+        try:
+            await q.put(event)
+        except Exception:
+            dead.append(q)
+    for q in dead:
+        team_queues[team_id].remove(q)
+
+# ── Pydantic models ───────────────────────────────────────────────────────────
 class SavedItem(BaseModel):
     text: str
     priority: str
@@ -243,6 +257,43 @@ def me(current=Depends(get_current_user)):
                         role=user["role"], team_id=user["team_id"],
                         team_name=team["name"] if team else None)
 
+# ── Real-time SSE ─────────────────────────────────────────────────────────────
+@app.get("/events", tags=["Realtime"])
+async def events(token: str = Query(...)):
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    conn = get_conn()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (int(payload["sub"]),)).fetchone()
+    conn.close()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    user = dict(user)
+    team_id = user["team_id"]
+    queue: asyncio.Queue = asyncio.Queue()
+    team_queues[team_id].append(queue)
+
+    async def stream():
+        try:
+            yield f"data: {json.dumps({'type': 'connected', 'user': user['name']})}\n\n"
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=25)
+                    yield f"data: {json.dumps(event)}\n\n"
+                except asyncio.TimeoutError:
+                    yield "data: {\"type\": \"ping\"}\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if queue in team_queues[team_id]:
+                team_queues[team_id].remove(queue)
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
+
 # ── Meeting routes ────────────────────────────────────────────────────────────
 @app.post("/meetings/process", tags=["Meetings"])
 def process_notes(req: ProcessNotesRequest, current=Depends(require_manager)):
@@ -285,10 +336,10 @@ def get_meetings(current=Depends(get_current_user)):
     return {"meetings": [dict(r) for r in rows]}
 
 @app.put("/items/{item_id}/status", tags=["Items"])
-def update_status(item_id: int, req: UpdateStatusRequest, current=Depends(get_current_user)):
+async def update_status(item_id: int, req: UpdateStatusRequest, current=Depends(get_current_user)):
     user, _ = current
     conn = get_conn()
-    item = conn.execute("SELECT owner_id FROM items WHERE id = ?", (item_id,)).fetchone()
+    item = conn.execute("SELECT owner_id, text, priority FROM items WHERE id = ?", (item_id,)).fetchone()
     if not item:
         conn.close()
         raise HTTPException(status_code=404, detail="Item not found")
@@ -298,6 +349,15 @@ def update_status(item_id: int, req: UpdateStatusRequest, current=Depends(get_cu
     conn.execute("UPDATE items SET status = ? WHERE id = ?", (req.status, item_id))
     conn.commit()
     conn.close()
+
+    # Broadcast to all connected clients on this team
+    await broadcast(user["team_id"], {
+        "type": "status_update",
+        "item_id": item_id,
+        "status": req.status,
+        "updated_by": user["name"],
+        "item_text": item["text"][:60]
+    })
     return {"ok": True}
 
 @app.get("/api/tasks", tags=["Tasks"])
