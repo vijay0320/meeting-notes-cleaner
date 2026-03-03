@@ -21,7 +21,7 @@
             --accent: #e8ff47;
             --accent2: #ff4757;
             --accent3: #47c8ff;
-            --card: #111111;
+            --card: #111111
         }
 
         [data-theme="light"] {
@@ -35,7 +35,7 @@
             --accent: #1a1a1a;
             --accent2: #c0392b;
             --accent3: #0066cc;
-            --card: #ffffff;
+            --card: #ffffff
         }
 
         * {
@@ -54,7 +54,6 @@
             transition: background 0.4s, color 0.4s
         }
 
-        /* ── SIDEBAR ── */
         .sidebar {
             background: var(--bg2);
             border-right: 1px solid var(--border);
@@ -203,7 +202,6 @@
             cursor: pointer
         }
 
-        /* ── MAIN ── */
         .main {
             overflow-y: auto;
             height: 100vh
@@ -293,7 +291,6 @@
             transform: translateX(16px)
         }
 
-        /* ── CONTENT ── */
         .content {
             padding: 32px
         }
@@ -306,7 +303,6 @@
             display: block
         }
 
-        /* Stats row */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -338,7 +334,6 @@
             color: var(--text3)
         }
 
-        /* Notes panel */
         .panel {
             background: var(--card);
             border: 1px solid var(--border);
@@ -402,7 +397,6 @@
             margin-bottom: 0
         }
 
-        /* Items list */
         .items-list {
             display: flex;
             flex-direction: column;
@@ -505,7 +499,6 @@
             border-radius: 3px
         }
 
-        /* Team grid */
         .team-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -517,12 +510,23 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 20px;
-            opacity: 0
+            opacity: 0;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s
+        }
+
+        .member-card:hover {
+            border-color: var(--text3);
+            background: var(--bg3)
         }
 
         .member-card.overloaded {
             border-color: rgba(255, 71, 87, 0.3);
             background: rgba(255, 71, 87, 0.03)
+        }
+
+        .member-card.overloaded:hover {
+            border-color: #ff4757
         }
 
         .member-name {
@@ -598,7 +602,6 @@
             color: var(--text3)
         }
 
-        /* Meetings list */
         .meeting-row {
             display: flex;
             align-items: center;
@@ -651,7 +654,6 @@
             border: 1px solid rgba(46, 213, 115, 0.2)
         }
 
-        /* Alert banner */
         .alert-banner {
             padding: 12px 16px;
             border-radius: 6px;
@@ -672,7 +674,6 @@
             color: #ff4757
         }
 
-        /* Empty state */
         .empty {
             text-align: center;
             padding: 40px;
@@ -695,10 +696,8 @@
 </head>
 
 <body>
-
     <div class="cursor" id="cursor"></div>
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-logo"><span class="logo-dot"></span>MeetingMind</div>
         <nav class="sidebar-nav">
@@ -725,7 +724,6 @@
         </div>
     </aside>
 
-    <!-- MAIN -->
     <div class="main">
         <div class="topbar">
             <div class="topbar-title" id="page-title">Clean Notes</div>
@@ -737,10 +735,9 @@
 
         <div class="content">
 
-            <!-- ── CLEAN NOTES PAGE ── -->
+            <!-- CLEAN NOTES PAGE -->
             <div class="page active" id="page-notes">
-                <!-- Stats -->
-                <div class="stats-row" id="stats-row">
+                <div class="stats-row">
                     <div class="stat-card" id="sc1">
                         <div class="stat-card-num" id="stat-open" style="color:#ff4757">—</div>
                         <div class="stat-card-label">Open HIGH items</div>
@@ -758,14 +755,7 @@
                         <div class="stat-card-label">Items done</div>
                     </div>
                 </div>
-
-                <!-- Debt warning -->
-                <div class="alert-banner warning" id="debt-banner">
-                    <span>⚠</span>
-                    <span id="debt-text"></span>
-                </div>
-
-                <!-- Note input -->
+                <div class="alert-banner warning" id="debt-banner"><span>⚠</span><span id="debt-text"></span></div>
                 <div class="panel">
                     <div class="panel-header">
                         <div class="panel-title">New Meeting Notes</div>
@@ -785,8 +775,6 @@
                         <div id="process-error" style="color:#ff4757;font-size:0.75rem;margin-top:8px"></div>
                     </div>
                 </div>
-
-                <!-- Output -->
                 <div class="panel" id="output-panel" style="display:none">
                     <div class="panel-header">
                         <div class="panel-title">Cleaned Output</div>
@@ -799,7 +787,7 @@
                 </div>
             </div>
 
-            <!-- ── MEETINGS PAGE ── -->
+            <!-- MEETINGS PAGE -->
             <div class="page" id="page-meetings">
                 <div class="panel">
                     <div class="panel-header">
@@ -813,16 +801,28 @@
                 </div>
             </div>
 
-            <!-- ── TEAM PAGE ── -->
+            <!-- TEAM PAGE -->
             <div class="page" id="page-team">
                 <div class="panel" style="margin-bottom:20px">
                     <div class="panel-header">
                         <div class="panel-title">Team Workload</div>
+                        <div style="font-size:0.7rem;color:var(--text3);font-family:monospace" id="team-updated"></div>
                     </div>
                     <div class="panel-body">
                         <div class="team-grid" id="team-grid">
                             <div class="empty">No team members yet. Share your team code.</div>
                         </div>
+                    </div>
+                </div>
+                <!-- Member detail panel -->
+                <div class="panel" id="member-detail-panel" style="display:none">
+                    <div class="panel-header">
+                        <div class="panel-title" id="member-detail-name"></div>
+                        <button class="btn btn-ghost" style="padding:4px 10px;font-size:0.7rem"
+                            onclick="closeMemberDetail()">✕ Close</button>
+                    </div>
+                    <div class="panel-body">
+                        <div id="member-detail-items"></div>
                     </div>
                 </div>
             </div>
@@ -838,25 +838,12 @@
             el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
         });
 
-        // ── AUTH ──
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/login';
 
-        function authHeaders() {
-            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-        }
-
-        function logout() {
-            fetch('/auth/logout', { method: 'POST', headers: authHeaders() });
-            localStorage.clear();
-            window.location.href = '/';
-        }
-
+        function authHeaders() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }; }
+        function toggleTheme() { const h = document.documentElement; h.setAttribute('data-theme', h.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+        function logout() { fetch('/auth/logout', { method: 'POST', headers: authHeaders() }); localStorage.clear(); window.location.href = '/'; }
         function copyCode() {
             const code = document.getElementById('team-code').textContent;
             navigator.clipboard.writeText(code);
@@ -864,7 +851,6 @@
             setTimeout(() => loadMe(), 1500);
         }
 
-        // ── NAVIGATION ──
         function switchPage(name) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -875,22 +861,16 @@
             if (name === 'team') loadTeam();
         }
 
-        // ── LOAD USER INFO ──
         async function loadMe() {
             const res = await fetch('/auth/me', { headers: authHeaders() });
             if (!res.ok) { window.location.href = '/login'; return; }
             const data = await res.json();
             document.getElementById('user-name').textContent = data.name;
             document.getElementById('user-initial').textContent = data.name[0].toUpperCase();
-
             const teamRes = await fetch('/team/code', { headers: authHeaders() });
-            if (teamRes.ok) {
-                const t = await teamRes.json();
-                document.getElementById('team-code').textContent = t.code;
-            }
+            if (teamRes.ok) { const t = await teamRes.json(); document.getElementById('team-code').textContent = t.code; }
         }
 
-        // ── LOAD STATS ──
         async function loadStats() {
             const [membersRes, meetingsRes] = await Promise.all([
                 fetch('/team/members', { headers: authHeaders() }),
@@ -904,12 +884,9 @@
                 document.getElementById('stat-open').textContent = openHigh;
                 document.getElementById('stat-members').textContent = members.length;
                 document.getElementById('stat-done').textContent = done;
-
-                // Debt warnings
                 const overloaded = members.filter(m => m.overloaded);
                 if (overloaded.length > 0) {
-                    document.getElementById('debt-text').textContent =
-                        overloaded.map(m => m.name + ' has ' + m.open_high + ' unresolved HIGH items').join(' · ');
+                    document.getElementById('debt-text').textContent = overloaded.map(m => m.name + ' has ' + m.open_high + ' unresolved HIGH items').join(' · ');
                     document.getElementById('debt-banner').classList.add('show');
                 }
             }
@@ -917,12 +894,9 @@
                 const data = await meetingsRes.json();
                 document.getElementById('stat-meetings').textContent = data.meetings.length;
             }
-
-            // Animate stat cards
             anime({ targets: '.stat-card', opacity: [0, 1], translateY: [10, 0], delay: anime.stagger(80), duration: 500, easing: 'easeOutExpo' });
         }
 
-        // ── PROCESS NOTES ──
         let currentPoints = [];
         async function processNotes() {
             const title = document.getElementById('meeting-title').value.trim();
@@ -930,32 +904,23 @@
             const err = document.getElementById('process-error');
             if (!notes) { err.textContent = 'Please enter some notes.'; return; }
             err.textContent = '';
-
-            const res = await fetch('/meetings/process', {
-                method: 'POST', headers: authHeaders(),
-                body: JSON.stringify({ title: title || 'Untitled', notes })
-            });
+            const res = await fetch('/meetings/process', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ title: title || 'Untitled', notes }) });
             const data = await res.json();
             if (!res.ok) { err.textContent = data.detail || 'Error processing notes.'; return; }
-
             currentPoints = data.points;
             renderItems(data.points);
             document.getElementById('output-panel').style.display = 'block';
             document.getElementById('save-btn').style.display = 'inline-block';
-
             const high = data.points.filter(p => p.priority === 'high').length;
             const med = data.points.filter(p => p.priority === 'medium').length;
             const low = data.points.filter(p => p.priority === 'low').length;
             document.getElementById('output-counts').textContent = high + ' high · ' + med + ' med · ' + low + ' low';
         }
 
-        // ── RENDER ITEMS ──
         async function renderItems(points) {
-            // Load team members for assignment dropdown
             let members = [];
             const res = await fetch('/team/members', { headers: authHeaders() });
             if (res.ok) { const d = await res.json(); members = d.members; }
-
             const list = document.getElementById('items-list');
             list.innerHTML = points.map((p, i) => `
     <div class="item-row ${p.priority}">
@@ -963,48 +928,26 @@
       <div class="item-body">
         <div class="item-text">${p.text}</div>
         <div class="item-meta">
-          <select class="assign-select" onchange="assignItem(${i}, this.value)" id="assign-${i}">
+          <select class="assign-select" id="assign-${i}">
             <option value="">— Assign to —</option>
-            ${members.map(m => `<option value="${m.id}" ${p.owner_name === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
+            ${members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
           </select>
-          ${p.owner_name ? '<span class="owner-tag">👤 ' + p.owner_name + '</span>' : ''}
         </div>
       </div>
     </div>
   `).join('');
-
             anime({ targets: '.item-row', opacity: [0, 1], translateX: [-10, 0], delay: anime.stagger(60), duration: 400, easing: 'easeOutExpo' });
         }
 
-        function assignItem(index, userId) {
-            if (userId) {
-                currentPoints[index].owner_id = parseInt(userId);
-            }
-        }
-
-        // ── SAVE MEETING ──
         async function saveMeeting() {
             const title = document.getElementById('meeting-title').value.trim() || 'Untitled Meeting';
-
-            // Build items with owner assignments from dropdowns
             const itemsWithOwners = currentPoints.map((p, i) => {
                 const select = document.getElementById('assign-' + i);
                 const ownerId = select && select.value ? parseInt(select.value) : null;
-                const ownerName = select && select.value ?
-                    select.options[select.selectedIndex].text : null;
-                return {
-                    text: p.text,
-                    priority: p.priority,
-                    owner_id: ownerId,
-                    owner_name: ownerName,
-                    status: 'todo'
-                };
+                const ownerName = select && select.value ? select.options[select.selectedIndex].text : null;
+                return { text: p.text, priority: p.priority, owner_id: ownerId, owner_name: ownerName, status: 'todo' };
             });
-
-            const res = await fetch('/meetings/save', {
-                method: 'POST', headers: authHeaders(),
-                body: JSON.stringify({ title, items: itemsWithOwners })
-            });
+            const res = await fetch('/meetings/save', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ title, items: itemsWithOwners }) });
             if (res.ok) {
                 document.getElementById('save-btn').textContent = '✓ Saved';
                 document.getElementById('save-btn').disabled = true;
@@ -1015,7 +958,6 @@
             }
         }
 
-        // ── LOAD MEETINGS ──
         async function loadMeetings() {
             const res = await fetch('/meetings', { headers: authHeaders() });
             const data = await res.json();
@@ -1035,7 +977,6 @@
   `).join('');
         }
 
-        // ── LOAD TEAM ──
         async function loadTeam() {
             const res = await fetch('/team/members', { headers: authHeaders() });
             const data = await res.json();
@@ -1049,7 +990,7 @@
                     : rate === 100 ? '<span class="member-status clear-badge">✓ All clear</span>'
                         : '<span class="member-status ok-badge">— OK</span>';
                 return `
-      <div class="member-card ${m.overloaded ? 'overloaded' : ''}">
+      <div class="member-card ${m.overloaded ? 'overloaded' : ''}" onclick="showMemberDetail(${m.id},'${m.name}')">
         <div class="member-name">${m.name}</div>
         <div class="member-role">${m.role}</div>
         <div class="member-stats">
@@ -1065,9 +1006,38 @@
       </div>
     `;
             }).join('');
+            document.getElementById('team-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
             anime({ targets: '.member-card', opacity: [0, 1], translateY: [15, 0], delay: anime.stagger(80), duration: 500, easing: 'easeOutExpo' });
         }
 
+        async function showMemberDetail(memberId, name) {
+            document.getElementById('member-detail-name').textContent = name + "'s Tasks";
+            document.getElementById('member-detail-panel').style.display = 'block';
+            document.getElementById('member-detail-items').innerHTML = '<div style="color:var(--text3);font-size:0.8rem;padding:8px">Loading...</div>';
+            const res = await fetch('/team/members/' + memberId + '/items', { headers: authHeaders() });
+            const data = await res.json();
+            const items = data.items || [];
+            if (!items.length) { document.getElementById('member-detail-items').innerHTML = '<div class="empty">No tasks assigned.</div>'; return; }
+            const statusIcon = { 'todo': '○', 'in-progress': '◑', 'done': '●' };
+            const statusColor = { 'todo': 'var(--text3)', 'in-progress': '#47c8ff', 'done': '#2ed573' };
+            document.getElementById('member-detail-items').innerHTML = items.map(item => `
+    <div class="item-row ${item.priority}" style="margin-bottom:8px;opacity:${item.status === 'done' ? '0.4' : '1'}">
+      <span class="item-badge">${item.priority.toUpperCase()}</span>
+      <div class="item-body">
+        <div class="item-text">${item.text}</div>
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:0.68rem">
+          <span style="color:${statusColor[item.status]}">${statusIcon[item.status]} ${item.status}</span>
+          <span style="color:var(--text3)">from: ${item.meeting_title}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+            document.getElementById('member-detail-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeMemberDetail() {
+            document.getElementById('member-detail-panel').style.display = 'none';
+        }
 
         function connectRealtime() {
             const es = new EventSource('/events?token=' + token);
