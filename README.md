@@ -73,6 +73,19 @@ Fine-tuned `google/flan-t5-small` on the [AMI Meeting Corpus](https://groups.inf
 > Model weights are not committed to git (293MB). Retrain using instructions below.
 
 ---
+## Model Evaluation — ROUGE Scores
+
+Evaluated on 15 AMI test meetings comparing model output against human summaries.
+
+| Metric  | Score  | Meaning                    |
+|---------|--------|----------------------------|
+| ROUGE-1 | 0.1761 | Word overlap               |
+| ROUGE-2 | 0.0510 | Bigram overlap             |
+| ROUGE-L | 0.1473 | Longest common subsequence |
+
+**Above random baseline (~0.10) but below large models (BART ~0.45).**
+Expected for flan-t5-small (80MB) trained on 142 meetings.
+Upgrading to flan-t5-base projected to reach ROUGE-1 ~0.25.
 
 ## Setup
 
