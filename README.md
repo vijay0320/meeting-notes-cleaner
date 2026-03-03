@@ -6,7 +6,7 @@ A local, no-API meeting notes cleaner built with fine-tuned FLAN-T5, Flask, Fast
 
 **Input** — raw messy notes:
 ```
-priya - blocked on API spec from backend, needs it asap or sprint is at risk
+troy - blocked on API spec from backend, needs it asap or sprint is at risk
 deployment pipeline broke last night, devops investigating, critical blocker
 sara - design review scheduled thursday, needs sign off from product before then
 john - finished auth module, pushing to staging today
