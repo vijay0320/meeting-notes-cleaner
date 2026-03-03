@@ -1068,9 +1068,33 @@
             anime({ targets: '.member-card', opacity: [0, 1], translateY: [15, 0], delay: anime.stagger(80), duration: 500, easing: 'easeOutExpo' });
         }
 
-        // ── INIT ──
+
+        function connectRealtime() {
+            const es = new EventSource('/events?token=' + token);
+            es.onmessage = (e) => {
+                const ev = JSON.parse(e.data);
+                if (ev.type === 'status_update') {
+                    const labels = { 'todo': 'Todo', 'in-progress': 'In Progress', 'done': 'Done' };
+                    showToast(ev.updated_by + ' marked task ' + labels[ev.status]);
+                    loadStats();
+                    if (document.getElementById('page-team').classList.contains('active')) loadTeam();
+                }
+            };
+            es.onerror = () => { es.close(); setTimeout(connectRealtime, 3000); };
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--card);border:1px solid var(--border);padding:12px 18px;border-radius:8px;font-size:0.78rem;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,0.4);transform:translateY(20px);opacity:0;transition:all 0.3s;max-width:280px';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.transform = 'translateY(0)'; t.style.opacity = '1'; }, 10);
+            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 4000);
+        }
+
         loadMe();
         loadStats();
+        connectRealtime();
     </script>
 </body>
 
