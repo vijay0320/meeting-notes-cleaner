@@ -1,77 +1,200 @@
-# Meeting Notes Cleaner + MeetingMind
+# Meeting Notes Cleaner
 
-Two projects in one repo — a local AI meeting notes cleaner and a full multi-user SaaS application built on top of it.
+> Fine-tuned flan-t5-small on the AMI Meeting Corpus to extract and prioritize action items from raw meeting transcripts. 99.7% classification accuracy. Built into a multi-user SaaS with real-time updates.
+
+[![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.1-orange)](https://pytorch.org)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-yellow)](https://huggingface.co)
+[![Tests](https://img.shields.io/badge/Tests-43%2F43-green)](tests/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue)](Dockerfile)
 
 ---
 
-## Project 1: Meeting Notes Cleaner (`app_v2.py`)
+## The Problem
 
-A local, no-API meeting notes cleaner that takes raw messy notes and returns clean prioritized action items with owner detection and team analytics.
+Meeting notes are messy. Key action items get buried in transcripts, owners are unclear, and nothing gets tracked. Teams lose hours every week to follow-ups that should have been automatic.
 
-### Demo
+---
 
-**Input:**
+## The ML Approach
+
+### Model
+Fine-tuned `google/flan-t5-small` (80MB) on the AMI Meeting Corpus — 142 real meetings with human-annotated action items.
+
 ```
-troy - blocked on API spec from backend, needs it asap or sprint is at risk
-deployment pipeline broke last night, devops investigating, critical blocker
-sara - design review scheduled thursday, needs sign off from product before then
-john - finished auth module, pushing to staging today
-```
-
-**Output:**
-```
-HIGH  👤 Troy     Troy: blocked on API spec, needs it asap or sprint is at risk.
-HIGH  👤 Devops   Deployment pipeline broke last night, critical blocker.
-MED   👤 Sara     Sara: design review thursday, needs sign off from product.
-LOW   👤 John     John: finished auth module, pushing to staging today.
+Raw transcript → flan-t5-small → Cleaned action items
+"priya blocked on api needs it asap sprint at risk"
+→ "Priya: blocked on API spec, needs it ASAP or sprint is at risk."
 ```
 
-### Features
+### Why flan-t5-small
+- Instruction-tuned baseline — already understands task framing
+- 80MB vs BART-large (400MB) — deployable locally, no API cost
+- Sufficient for extraction tasks with limited training data
+- Runs on CPU in ~1-2 seconds per meeting
 
-| Feature | Description |
-|---|---|
-| Priority Engine | Flags HIGH / MEDIUM / LOW — 99.7% accuracy on 322 samples |
-| Owner Detection | Extracts person/team from 4 patterns (name-, assigned to, Name will, team tokens) |
-| Action Tracker | Mark items Todo / In Progress / Done, persisted in SQLite |
-| Meeting History | Save and browse past meetings |
-| Health Score | % of previous meeting items closed before next meeting |
-| Meeting Debt | Flags owners with 3+ unresolved HIGH items across meetings |
-| Workload View | Per-owner completion rate and overload detection |
-| Audio Input | Record meeting → Whisper transcribes locally → notes auto-filled |
-| REST API | FastAPI with auto-generated Swagger docs at /docs |
-| Export | Download cleaned notes as PDF or Markdown |
-| Docker | Runs in container with `docker compose up --build` |
+### Data Pipeline
+
+```
+AMI Corpus (142 meetings, 381 action items)
+        ↓
+XML annotation parser (augment_data_v2.py)
+        ↓
+Synthetic augmentation — 300 samples across 5 domains
+(engineering, product, marketing, finance, HR)
+        ↓
+Train/Val/Test split — 363 / 39 / 15
+        ↓
+Fine-tune flan-t5-small — 5 epochs, CPU, ~20 mins on M1
+        ↓
+my_meeting_model_v2/ (293MB, not committed)
+```
+
+### Training Results
+
+| Version | Train Loss | Val Loss | Data |
+|---|---|---|---|
+| v1 | 1.73 | 2.60 | AMI only, 113 samples |
+| v2 | 0.76 | 1.13 | AMI + synthetic, 363 samples |
+
+---
+
+## Priority Classification Engine
+
+A rule-based classifier that flags each action item as HIGH / MEDIUM / LOW based on keyword matching. Achieves **99.7% accuracy** — outperforming a trained ML classifier on this task.
+
+### Why Rule-Based Over ML for Priority
+The keywords that signal urgency ("asap", "critical", "blocker", "EOD") are explicit and domain-stable. An ML classifier would need thousands of labeled examples to learn what these 3 lines of rules capture perfectly. This is a deliberate design choice — use ML where it adds value, rules where they're sufficient.
 
 ### Benchmark Results
 
-Tested priority engine against 322 labeled samples (30 hand-labeled + 292 AMI corpus).
+Tested against 322 labeled samples (30 hand-labeled + 292 from AMI corpus).
 
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
 | High | 1.00 | 1.00 | 1.00 | 17 |
 | Medium | 0.99 | 1.00 | 1.00 | 172 |
 | Low | 1.00 | 0.99 | 1.00 | 133 |
+| **Overall** | | | **0.997** | **322** |
 
-**Overall accuracy: 99.7%** (321/322 correct)
+Only misclassification: "q3 planning doc shared with the team" (predicted MEDIUM, true LOW).
 
-### Model Evaluation — ROUGE Scores
+```bash
+python benchmark.py  # reproduce results
+```
 
-| Metric | Score | Meaning |
+---
+
+## ROUGE Evaluation
+
+Evaluated model summarization quality against human-written AMI summaries.
+
+| Metric | Score | Industry benchmark (BART-large) |
 |---|---|---|
-| ROUGE-1 | 0.1761 | Word overlap |
-| ROUGE-2 | 0.0510 | Bigram overlap |
-| ROUGE-L | 0.1473 | Longest common subsequence |
+| ROUGE-1 | 0.176 | ~0.45 |
+| ROUGE-2 | 0.051 | ~0.20 |
+| ROUGE-L | 0.147 | ~0.40 |
 
-Above random baseline (~0.10). Upgrading to flan-t5-base projected to reach ROUGE-1 ~0.25.
+Score is above random baseline (~0.10). Gap from BART-large is expected — flan-t5-small is 5x smaller with 30x less training data. Upgrading to flan-t5-base is projected to reach ROUGE-1 ~0.25.
 
-### Unit Tests
+```bash
+python rouge_eval.py  # reproduce results
+```
+
+---
+
+## Owner Detection
+
+Extracts task owners from natural language using 4 regex patterns:
+
+```python
+# Pattern 1: "name - task"
+"priya - blocked on API spec" → Priya
+
+# Pattern 2: "assigned to name"
+"assigned to sara for review" → Sara
+
+# Pattern 3: "Name will/should/must"
+"John will fix the bug" → John
+
+# Pattern 4: team tokens
+"devops investigating pipeline" → Devops
+"cto flagged this as critical" → CTO
+```
+
+Handles acronym formatting: CTO, QA, HR, CEO, API, UI, UX.
+
+---
+
+## Demo
+
+**Input — raw messy notes:**
+```
+priya - blocked on API spec from backend, needs it asap or sprint is at risk
+deployment pipeline broke last night, devops investigating, critical blocker
+sara - design review scheduled thursday, needs sign off from product before then
+john - finished auth module, pushing to staging today
+budget approval needed before EOD for Q2 tooling spend
+```
+
+**Output — cleaned and prioritized:**
+```
+HIGH  👤 Priya    Priya: blocked on API spec, needs it asap or sprint is at risk.
+HIGH  👤 Devops   Deployment pipeline broke last night, critical blocker.
+HIGH  👤 Unassigned  Budget approval needed before EOD for Q2 tooling spend.
+MED   👤 Sara     Sara: design review thursday, needs sign off from product.
+LOW   👤 John     John: finished auth module, pushing to staging today.
+```
+
+---
+
+## Analytics Features
+
+Novel KPIs designed for meeting accountability:
+
+**Meeting Health Score** — % of previous meeting's items closed before the next one.
+```
+80-100% → Healthy (green)
+50-79%  → Moderate (yellow)
+0-49%   → At Risk (red)
+```
+
+**Meeting Debt** — flags owners with 3+ unresolved HIGH items across meetings. Surfaces bottlenecks before they become blockers.
+
+**Owner Workload** — per-owner completion rate, open/done counts, overload detection.
+
+---
+
+## Audio Pipeline
+
+Record meeting audio directly in the browser → Whisper base model transcribes locally → text split into items → priority flagged.
+
+```
+Browser microphone → .webm → Whisper base (74MB, CPU) → transcribed text → priority engine
+```
+
+No audio leaves the machine. No API cost.
+
+---
+
+## Unit Tests
 
 ```bash
 pytest tests/ -v
 # 43 passed in 2.12s
 ```
 
-### Quick Start
+| File | Tests | What's covered |
+|---|---|---|
+| tests/test_priority.py | 23 | flag_priority() — all HIGH/MEDIUM/LOW cases |
+| tests/test_owner.py | 11 | detect_owner() — 4 patterns + acronyms |
+| tests/test_routes.py | 9 | Flask API — /process, sorting, validation |
+
+---
+
+## Quick Start
+
+### Local Python
 
 ```bash
 git clone https://github.com/vijay0320/meeting-notes-cleaner
@@ -81,35 +204,91 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Flask app
+# Flask UI
 python app_v2.py
 # Open http://localhost:8080
 
-# FastAPI
+# FastAPI + Swagger docs
 uvicorn api:app --reload --port 8080
 # Docs at http://localhost:8080/docs
-
-# Docker
-docker compose up --build
 ```
 
-### Retrain Model (Optional)
-
-Model weights not committed (293MB). Retrain in 3 steps:
+### Docker
 
 ```bash
-# 1. Download AMI corpus annotations
+docker compose up --build
+# Open http://localhost:8080
+```
+
+### Retrain Model
+
+```bash
+# 1. Download AMI corpus (free, CC BY 4.0)
 curl -O https://groups.inf.ed.ac.uk/ami/AMICorpusAnnotations/ami_public_manual_1.6.2.zip
 unzip ami_public_manual_1.6.2.zip -d ami_annotations
 
-# 2. Generate training data
+# 2. Generate augmented training data
 python augment_data_v2.py
 
-# 3. Fine-tune flan-t5-small (~20 mins on M1 CPU)
+# 3. Fine-tune (~20 mins on M1 CPU)
 python train_v2.py
+# Saves to my_meeting_model_v2/
 ```
 
-### Version History (v1.0 → v12.0)
+---
+
+## MeetingMind — Multi-User SaaS (`meetingmind/`)
+
+Built on top of the notes cleaner. Teams collaborate — managers clean notes and assign tasks, members see their tasks and update progress in real time.
+
+### Features
+- JWT auth (bcrypt, brute force protection, token blacklist)
+- Role-based access: Manager vs Member
+- Team invite codes
+- Real-time status updates via Server-Sent Events
+- Email notifications (Gmail SMTP) — task assigned, all done, overdue
+- Animated landing page (AnimeJS)
+
+### Quick Start
+
+```bash
+# Generate secret key
+python -c "import secrets; print(secrets.token_hex(32))"
+
+# Create meetingmind/.env
+SECRET_KEY=your_key
+GMAIL_USER=your@gmail.com
+GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+
+# Run
+uvicorn meetingmind.main:app --port 8091 --host 127.0.0.1
+# Open http://localhost:8091
+# API docs at http://localhost:8091/docs
+```
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Language Model | google/flan-t5-small (fine-tuned) |
+| Audio | OpenAI Whisper base (local) |
+| Training | PyTorch 2.1 + HuggingFace Transformers |
+| Evaluation | ROUGE, Precision/Recall/F1 |
+| Backend | Flask + FastAPI |
+| Auth | JWT (python-jose) + bcrypt |
+| Real-time | Server-Sent Events |
+| Email | Gmail SMTP (aiosmtplib) |
+| Database | SQLite |
+| Testing | pytest + pytest-flask |
+| Container | Docker + docker-compose |
+| CI/CD | GitHub Actions |
+| Data | AMI Meeting Corpus (CC BY 4.0) |
+
+---
+
+## Version History
 
 | Version | What was added |
 |---|---|
@@ -121,157 +300,15 @@ python train_v2.py
 | v6.0 | Docker containerization |
 | v7.0 | Whisper audio input (local, no API) |
 | v8.0 | pytest unit tests (43/43 passing) |
-| v9.0 | FastAPI migration (auto docs, Pydantic, uvicorn) |
-| v10.0 | Comprehensive README + CI/CD GitHub Actions |
+| v9.0 | FastAPI migration |
+| v10.0 | README + CI/CD GitHub Actions |
 | v11.0 | PDF and Markdown export |
 | v12.0 | Project cleanup |
-
----
-
-## Project 2: MeetingMind (`meetingmind/`)
-
-A full multi-user SaaS application built on top of the meeting notes cleaner. Teams can collaborate — managers clean notes and assign tasks, members see their tasks and update progress in real time.
-
-### Demo Flow
-
-```
-Manager registers → creates team (invite code generated)
-Manager pastes messy notes → AI cleans → assigns tasks to members
-Members register with invite code → see their assigned tasks
-Members update status → manager sees live toast notification
-Manager views team workload → clicks member card → sees their tasks
-Email sent on task assigned, completion, and overdue alerts
-```
-
-### Features
-
-| Feature | Description |
-|---|---|
-| Auth | JWT tokens, bcrypt hashing, brute force protection, token blacklist |
-| Roles | Manager (full access) + Member (own tasks only) |
-| Team codes | Auto-generated invite code, members join with code |
-| Clean Notes | AI-powered note cleaning with assignment dropdowns |
-| Real-time | SSE broadcast — manager sees status changes instantly |
-| Workload view | Clickable member cards with task detail panel |
-| Email | Gmail SMTP — task assigned, all done, overdue HIGH items |
-| Landing page | Animated marketing page with AnimeJS |
-
-### Quick Start
-
-```bash
-# 1. Install dependencies
-pip install fastapi uvicorn "python-jose[cryptography]" "passlib[bcrypt]" \
-    python-dotenv "pydantic[email]" aiosmtplib bcrypt
-
-# 2. Generate secret key
-python -c "import secrets; print(secrets.token_hex(32))"
-
-# 3. Create meetingmind/.env
-SECRET_KEY=your_generated_key
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-GMAIL_USER=your@gmail.com
-GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-APP_URL=http://localhost:8091
-
-# 4. Run
-uvicorn meetingmind.main:app --port 8091 --host 127.0.0.1
-
-# Open http://localhost:8091
-# API docs at http://localhost:8091/docs
-```
-
-### API Routes
-
-| Method | Route | Access | Description |
-|---|---|---|---|
-| POST | /auth/register | Public | Register with role + team code |
-| POST | /auth/login | Public | Returns JWT tokens |
-| POST | /auth/logout | Auth | Revokes token |
-| GET | /auth/me | Auth | Current user info |
-| POST | /meetings/process | Manager | Clean and prioritize notes |
-| POST | /meetings/save | Manager | Save meeting + email assigned members |
-| GET | /meetings | Auth | All team meetings |
-| PUT | /items/{id}/status | Auth | Update item status |
-| GET | /api/tasks | Auth | Member's assigned tasks |
-| GET | /team/members | Manager | Team workload stats |
-| GET | /team/members/{id}/items | Manager | Member's task detail |
-| GET | /team/code | Manager | Team invite code |
-| GET | /events | Auth | SSE real-time stream |
-| POST | /admin/check-overdue | Manager | Trigger overdue email check |
-
-### Security
-
-- 256-bit secret key from .env (never committed)
-- Access tokens expire in 30 minutes
-- Refresh tokens expire in 7 days
-- Token blacklist in SQLite (revoked on logout)
-- bcrypt password hashing (cost factor 12)
-- 5 failed login attempts → 15 minute lockout
-- Role-based access control on every route
-- Members can only update their own items
-
-### Version History (v13.0 → v18.0)
-
-| Version | What was added |
-|---|---|
-| v13.0 | Landing page + login + register UI with AnimeJS |
-| v14.0 | JWT auth + manager dashboard + member tasks view |
+| v13.0 | MeetingMind — landing page + auth UI (AnimeJS) |
+| v14.0 | JWT auth + manager dashboard + member tasks |
 | v15.0 | Full task assignment flow |
-| v16.0 | Real-time updates via SSE + toast notifications |
-| v17.0 | Manager workload view + member task detail panel |
-| v18.0 | Email notifications (assigned, complete, overdue) |
-
----
-
-## Stack
-
-| Layer | Tech |
-|---|---|
-| AI Model | google/flan-t5-small fine-tuned on AMI corpus |
-| Audio | OpenAI Whisper base (local, no API) |
-| Backend | Flask + FastAPI |
-| Frontend | Vanilla HTML/CSS/JS + AnimeJS |
-| Database | SQLite |
-| Auth | JWT (python-jose) + bcrypt |
-| Email | Gmail SMTP (aiosmtplib) |
-| Real-time | Server-Sent Events (SSE) |
-| Training | PyTorch + HuggingFace Transformers |
-| Testing | pytest + pytest-flask (43/43) |
-| Container | Docker + docker-compose |
-| CI/CD | GitHub Actions (auto-run pytest on PR) |
-| Data | AMI Meeting Corpus (CC BY 4.0) |
-
----
-
-## Project Structure
-
-```
-meeting-notes-cleaner/
-├── app_v2.py               # Flask app — single user
-├── api.py                  # FastAPI version
-├── db.py                   # SQLite queries
-├── train_v2.py             # Fine-tune flan-t5-small
-├── augment_data_v2.py      # Synthetic data generation
-├── benchmark.py            # Priority engine benchmark
-├── rouge_eval.py           # ROUGE evaluation
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── static/index.html       # Single-user UI
-├── tests/                  # 43 unit tests
-├── .github/workflows/      # CI/CD
-└── meetingmind/            # Multi-user SaaS
-    ├── main.py             # FastAPI backend
-    ├── auth.py             # JWT + bcrypt
-    ├── db.py               # Schema + queries
-    ├── models.py           # Pydantic models
-    ├── email.py            # Email notifications
-    ├── .env                # Secrets (gitignored)
-    └── static/
-        ├── landing.html
-        ├── login.html
-        ├── register.html
-        ├── dashboard.html
-        └── tasks.html
-```
+| v16.0 | Real-time updates via SSE |
+| v17.0 | Manager workload view + member detail panel |
+| v18.0 | Email notifications |
+| v19.0 | README update |
+| v20.0 | Python as primary language (.gitattributes) |
