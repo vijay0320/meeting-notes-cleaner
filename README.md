@@ -14,7 +14,7 @@ john - finished auth module, pushing to staging today
 
 **Output** — cleaned and prioritized:
 ```
-HIGH  👤 Priya    Priya: blocked on API spec, needs it asap or sprint is at risk.
+HIGH  👤 Troy    Troy: blocked on API spec, needs it asap or sprint is at risk.
 HIGH  👤 Devops   Deployment pipeline broke last night, critical blocker.
 MED   👤 Sara     Sara: design review thursday, needs sign off from product.
 LOW   👤 John     John: finished auth module, pushing to staging today.
