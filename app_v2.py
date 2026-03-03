@@ -11,6 +11,14 @@ import re
 import sqlite3
 from datetime import datetime
 from db import get_all_meetings, get_meeting_debt
+import whisper
+import tempfile
+import os
+
+# Load whisper once at startup
+print("Loading Whisper model...")
+_whisper_model = whisper.load_model("base", device="cpu")
+print("Whisper ready.")
 
 app = Flask(__name__)
 DB = "meetings.db"
@@ -109,14 +117,17 @@ def clean_item(text):
     return text
 
 def split_notes(raw_notes):
-    lines = raw_notes.split('\n')
+    # Split on newlines first
+    lines = re.split(r'\n|\r\n', raw_notes)
     items = []
     for line in lines:
         line = line.strip()
         if not line or len(line) < 5:
             continue
-        for part in re.split(r';', line):
-            part = part.strip()
+        # Split on period or semicolon (handles Whisper output)
+        parts = re.split(r'(?<=[a-z])\.\s+|;', line)
+        for part in parts:
+            part = part.strip().rstrip('.')
             if len(part) > 5:
                 items.append(part)
     return items
@@ -239,6 +250,8 @@ textarea:focus { border-color: #444; }
       <div class="save-bar">
         <button class="btn" id="btn" onclick="processNotes()">Clean Notes &rarr;</button>
         <button class="btn btn-ghost" id="save-btn" style="display:none" onclick="saveMeeting()">Save to History</button>
+        <button class="btn btn-ghost" id="record-btn" onclick="toggleRecording()">&#9679; Record</button>
+        <div id="record-status" style="font-family:monospace; font-size:0.75rem; color:#555; margin-top:8px; display:none"></div>
       </div>
       <div class="spinner" id="spinner">processing...</div>
       <div class="error" id="error"></div>
@@ -500,6 +513,72 @@ async function loadWorkload() {
   list.innerHTML = html;
 }
 
+// ── Audio recording ──────────────────────────────────────────
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+async function toggleRecording() {
+  const btn = document.getElementById('record-btn');
+  const status = document.getElementById('record-status');
+
+  if (!isRecording) {
+    // Start recording
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        status.textContent = 'Transcribing...';
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('audio', blob, 'recording.webm');
+
+        try {
+          const res = await fetch('/transcribe', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (data.text) {
+            document.getElementById('notes').value = data.text;
+            status.textContent = 'Transcription complete. Review and click Clean Notes.';
+            status.style.color = '#5a9a5a';
+          } else {
+            status.textContent = 'Error: ' + (data.error || 'Unknown error');
+            status.style.color = '#c0392b';
+          }
+        } catch(e) {
+          status.textContent = 'Transcription failed: ' + e.message;
+          status.style.color = '#c0392b';
+        }
+
+        // Stop microphone
+        stream.getTracks().forEach(t => t.stop());
+        btn.textContent = '\u25CF Record';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        isRecording = false;
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      btn.textContent = '\u25A0 Stop Recording';
+      btn.style.borderColor = '#c0392b';
+      btn.style.color = '#c0392b';
+      status.style.display = 'block';
+      status.style.color = '#555';
+      status.textContent = 'Recording... click Stop when done.';
+    } catch(e) {
+      status.style.display = 'block';
+      status.textContent = 'Microphone access denied: ' + e.message;
+      status.style.color = '#c0392b';
+    }
+  } else {
+    // Stop recording
+    mediaRecorder.stop();
+  }
+}
+
 document.getElementById('notes').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.ctrlKey) processNotes();
 });
@@ -594,6 +673,26 @@ def workload():
     try:
         from db import get_owner_workload
         return jsonify({"workload": get_owner_workload()})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route("/transcribe", methods=["POST"])
+def transcribe():
+    try:
+        audio_file = request.files.get("audio")
+        if not audio_file:
+            return jsonify({"error": "No audio file received"})
+
+        # Save to temp file
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+            audio_file.save(tmp.name)
+            tmp_path = tmp.name
+
+        # Transcribe with Whisper
+        result = _whisper_model.transcribe(tmp_path)
+        os.unlink(tmp_path)  # clean up temp file
+
+        return jsonify({"text": result["text"].strip()})
     except Exception as e:
         return jsonify({"error": str(e)})
 
