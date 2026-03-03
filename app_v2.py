@@ -100,8 +100,8 @@ def detect_owner(text):
         if candidate.lower() not in TEAM_TOKENS:
             return format_owner(candidate)
     for token in ["dev team", "devops", "backend team", "frontend team", "qa team",
-                  "marketing", "legal", "finance", "hr", "product team", "sales team",
-                  "cto", "cfo", "ceo"]:
+              "marketing", "legal", "finance", "hr", "product team", "product manager",
+              "sales team", "cto", "cfo", "ceo"]:
         if token in text.lower():
             return format_owner(token)
     return None
