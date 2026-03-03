@@ -23,8 +23,8 @@ Fine-tuned `google/flan-t5-small` (80MB) on the AMI Meeting Corpus — 142 real 
 
 ```
 Raw transcript → flan-t5-small → Cleaned action items
-"priya blocked on api needs it asap sprint at risk"
-→ "Priya: blocked on API spec, needs it ASAP or sprint is at risk."
+"troy blocked on api needs it asap sprint at risk"
+→ "troy: blocked on API spec, needs it ASAP or sprint is at risk."
 ```
 
 ### Why flan-t5-small
@@ -109,7 +109,7 @@ Extracts task owners from natural language using 4 regex patterns:
 
 ```python
 # Pattern 1: "name - task"
-"priya - blocked on API spec" → Priya
+"troy - blocked on API spec" → Troy
 
 # Pattern 2: "assigned to name"
 "assigned to sara for review" → Sara
@@ -130,7 +130,7 @@ Handles acronym formatting: CTO, QA, HR, CEO, API, UI, UX.
 
 **Input — raw messy notes:**
 ```
-priya - blocked on API spec from backend, needs it asap or sprint is at risk
+troy - blocked on API spec from backend, needs it asap or sprint is at risk
 deployment pipeline broke last night, devops investigating, critical blocker
 sara - design review scheduled thursday, needs sign off from product before then
 john - finished auth module, pushing to staging today
@@ -139,7 +139,7 @@ budget approval needed before EOD for Q2 tooling spend
 
 **Output — cleaned and prioritized:**
 ```
-HIGH  👤 Priya    Priya: blocked on API spec, needs it asap or sprint is at risk.
+HIGH  👤 Troy    Troy: blocked on API spec, needs it asap or sprint is at risk.
 HIGH  👤 Devops   Deployment pipeline broke last night, critical blocker.
 HIGH  👤 Unassigned  Budget approval needed before EOD for Q2 tooling spend.
 MED   👤 Sara     Sara: design review thursday, needs sign off from product.
