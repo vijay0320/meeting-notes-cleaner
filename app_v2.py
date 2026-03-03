@@ -606,4 +606,4 @@ def debt():
 
 if __name__ == "__main__":
     print("Starting at http://127.0.0.1:8080")
-    app.run(debug=False, port=8080, host='127.0.0.1')
+    app.run(debug=False, port=8080, host='0.0.0.0')
