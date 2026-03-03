@@ -1,0 +1,4 @@
+# Tell GitHub not to count HTML/CSS as primary language
+meetingmind/static/*.html linguist-documentation
+static/*.html linguist-documentation
+*.html linguist-documentation
