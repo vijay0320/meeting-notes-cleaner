@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./my_meeting_model_v2:/app/my_meeting_model_v2
+      - ./meetings.db:/app/meetings.db
+    environment:
+      - PYTHONUNBUFFERED=1
