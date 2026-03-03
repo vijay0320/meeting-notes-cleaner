@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeetingMind — Dashboard</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        :root {
+            --bg: #080808;
+            --bg2: #0f0f0f;
+            --bg3: #161616;
+            --border: #1e1e1e;
+            --text: #f0f0f0;
+            --text2: #888;
+            --text3: #444;
+            --accent: #e8ff47;
+            --accent2: #ff4757;
+            --accent3: #47c8ff;
+            --card: #111111;
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f5f0;
+            --bg2: #efefea;
+            --bg3: #e8e8e3;
+            --border: #ddddd8;
+            --text: #0a0a0a;
+            --text2: #555;
+            --text3: #aaa;
+            --accent: #1a1a1a;
+            --accent2: #c0392b;
+            --accent3: #0066cc;
+            --card: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'DM Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            transition: background 0.4s, color 0.4s
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            padding: 24px 0
+        }
+
+        .sidebar-logo {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: -0.5px
+        }
+
+        .logo-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s ease-in-out infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8)
+            }
+        }
+
+        .sidebar-nav {
+            padding: 16px 12px;
+            flex: 1
+        }
+
+        .nav-section {
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text3);
+            padding: 8px 12px;
+            margin-bottom: 4px
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            color: var(--text2);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+            margin-bottom: 2px
+        }
+
+        .nav-item:hover {
+            background: var(--bg3);
+            color: var(--text)
+        }
+
+        .nav-item.active {
+            background: rgba(232, 255, 71, 0.08);
+            color: var(--accent);
+            border-left: 2px solid var(--accent)
+        }
+
+        .nav-icon {
+            font-size: 0.9rem;
+            width: 18px;
+            text-align: center
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border)
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--bg)
+        }
+
+        .user-name {
+            font-size: 0.78rem;
+            color: var(--text)
+        }
+
+        .user-role {
+            font-size: 0.65rem;
+            color: var(--text3);
+            letter-spacing: 0.5px
+        }
+
+        .team-code-box {
+            margin-top: 12px;
+            padding: 8px 10px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.65rem;
+            letter-spacing: 1px
+        }
+
+        .team-code-label {
+            color: var(--text3);
+            margin-bottom: 2px
+        }
+
+        .team-code-value {
+            color: var(--accent);
+            font-weight: 500;
+            letter-spacing: 2px;
+            cursor: pointer
+        }
+
+        /* ── MAIN ── */
+        .main {
+            overflow-y: auto;
+            height: 100vh
+        }
+
+        .topbar {
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10
+        }
+
+        .topbar-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.5px
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .btn {
+            padding: 8px 18px;
+            border-radius: 5px;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: none;
+            letter-spacing: 0.5px
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg)
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text2)
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--text3);
+            color: var(--text)
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 20px;
+            background: var(--border);
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 2px;
+            transition: background 0.3s
+        }
+
+        .theme-toggle::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text);
+            transition: transform 0.3s
+        }
+
+        [data-theme="light"] .theme-toggle::after {
+            transform: translateX(16px)
+        }
+
+        /* ── CONTENT ── */
+        .content {
+            padding: 32px
+        }
+
+        .page {
+            display: none
+        }
+
+        .page.active {
+            display: block
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            opacity: 0
+        }
+
+        .stat-card-num {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1;
+            margin-bottom: 4px
+        }
+
+        .stat-card-label {
+            font-size: 0.68rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text3)
+        }
+
+        /* Notes panel */
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 20px
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .panel-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: -0.3px
+        }
+
+        .panel-body {
+            padding: 20px
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.65rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 8px
+        }
+
+        .form-input {
+            width: 100%;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 14px
+        }
+
+        .form-input:focus {
+            border-color: var(--accent)
+        }
+
+        .form-input::placeholder {
+            color: var(--text3)
+        }
+
+        textarea.form-input {
+            height: 140px;
+            resize: vertical;
+            margin-bottom: 0
+        }
+
+        /* Items list */
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 16px
+        }
+
+        .item-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 6px;
+            border-left: 3px solid transparent
+        }
+
+        .item-row.high {
+            background: rgba(255, 71, 87, 0.06);
+            border-left-color: #ff4757
+        }
+
+        .item-row.medium {
+            background: rgba(71, 200, 255, 0.05);
+            border-left-color: #47c8ff
+        }
+
+        .item-row.low {
+            background: rgba(232, 255, 71, 0.04);
+            border-left-color: var(--accent)
+        }
+
+        .item-badge {
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+            margin-top: 2px
+        }
+
+        .high .item-badge {
+            background: #ff4757;
+            color: #fff
+        }
+
+        .medium .item-badge {
+            background: #47c8ff22;
+            color: #47c8ff;
+            border: 1px solid #47c8ff44
+        }
+
+        .low .item-badge {
+            background: rgba(232, 255, 71, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(232, 255, 71, 0.2)
+        }
+
+        .item-body {
+            flex: 1
+        }
+
+        .item-text {
+            font-size: 0.82rem;
+            color: var(--text);
+            margin-bottom: 6px;
+            line-height: 1.4
+        }
+
+        .item-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .assign-select {
+            font-size: 0.68rem;
+            font-family: 'DM Mono', monospace;
+            background: var(--bg3);
+            color: var(--text2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3px 8px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s
+        }
+
+        .assign-select:focus {
+            border-color: var(--accent)
+        }
+
+        .owner-tag {
+            font-size: 0.68rem;
+            font-family: monospace;
+            color: var(--text3);
+            background: var(--bg3);
+            padding: 2px 8px;
+            border-radius: 3px
+        }
+
+        /* Team grid */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px
+        }
+
+        .member-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            opacity: 0
+        }
+
+        .member-card.overloaded {
+            border-color: rgba(255, 71, 87, 0.3);
+            background: rgba(255, 71, 87, 0.03)
+        }
+
+        .member-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 4px
+        }
+
+        .member-role {
+            font-size: 0.65rem;
+            color: var(--text3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 14px
+        }
+
+        .member-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px
+        }
+
+        .member-stat {
+            text-align: center;
+            padding: 8px;
+            background: var(--bg2);
+            border-radius: 4px
+        }
+
+        .member-stat-num {
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 700
+        }
+
+        .member-stat-label {
+            font-size: 0.6rem;
+            color: var(--text3);
+            letter-spacing: 0.5px
+        }
+
+        .progress-bar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s
+        }
+
+        .member-status {
+            font-size: 0.65rem;
+            font-family: monospace;
+            letter-spacing: 0.5px
+        }
+
+        .overloaded-badge {
+            color: #ff4757
+        }
+
+        .clear-badge {
+            color: #2ed573
+        }
+
+        .ok-badge {
+            color: var(--text3)
+        }
+
+        /* Meetings list */
+        .meeting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-radius: 6px;
+            background: var(--bg2);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.15s
+        }
+
+        .meeting-row:hover {
+            background: var(--bg3)
+        }
+
+        .meeting-row-title {
+            font-size: 0.85rem;
+            color: var(--text);
+            margin-bottom: 3px
+        }
+
+        .meeting-row-meta {
+            font-size: 0.68rem;
+            color: var(--text3)
+        }
+
+        .meeting-row-right {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .pill {
+            font-size: 0.62rem;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-family: monospace
+        }
+
+        .pill-high {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.2)
+        }
+
+        .pill-done {
+            background: rgba(46, 213, 115, 0.1);
+            color: #2ed573;
+            border: 1px solid rgba(46, 213, 115, 0.2)
+        }
+
+        /* Alert banner */
+        .alert-banner {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 0.78rem;
+            display: none
+        }
+
+        .alert-banner.show {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .alert-banner.warning {
+            background: rgba(255, 71, 87, 0.08);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            color: #ff4757
+        }
+
+        /* Empty state */
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--text3);
+            font-size: 0.82rem
+        }
+
+        .cursor {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s;
+            mix-blend-mode: difference
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="cursor" id="cursor"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span class="logo-dot"></span>MeetingMind</div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">Workspace</div>
+            <a class="nav-item active" onclick="switchPage('notes')"><span class="nav-icon">✦</span>Clean Notes</a>
+            <a class="nav-item" onclick="switchPage('meetings')"><span class="nav-icon">◈</span>Meetings</a>
+            <div class="nav-section" style="margin-top:12px">Team</div>
+            <a class="nav-item" onclick="switchPage('team')"><span class="nav-icon">◎</span>Workload</a>
+            <div class="nav-section" style="margin-top:12px">Account</div>
+            <a class="nav-item" onclick="logout()"><span class="nav-icon">→</span>Sign out</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="user-initial">?</div>
+                <div>
+                    <div class="user-name" id="user-name">Loading...</div>
+                    <div class="user-role">Manager</div>
+                </div>
+            </div>
+            <div class="team-code-box">
+                <div class="team-code-label">Team invite code</div>
+                <div class="team-code-value" id="team-code" onclick="copyCode()">Loading...</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+        <div class="topbar">
+            <div class="topbar-title" id="page-title">Clean Notes</div>
+            <div class="topbar-actions">
+                <button class="theme-toggle" onclick="toggleTheme()"></button>
+                <button class="btn btn-primary" onclick="switchPage('notes')">+ New Meeting</button>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <!-- ── CLEAN NOTES PAGE ── -->
+            <div class="page active" id="page-notes">
+                <!-- Stats -->
+                <div class="stats-row" id="stats-row">
+                    <div class="stat-card" id="sc1">
+                        <div class="stat-card-num" id="stat-open" style="color:#ff4757">—</div>
+                        <div class="stat-card-label">Open HIGH items</div>
+                    </div>
+                    <div class="stat-card" id="sc2">
+                        <div class="stat-card-num" id="stat-members" style="color:var(--accent3)">—</div>
+                        <div class="stat-card-label">Team members</div>
+                    </div>
+                    <div class="stat-card" id="sc3">
+                        <div class="stat-card-num" id="stat-meetings" style="color:var(--accent)">—</div>
+                        <div class="stat-card-label">Total meetings</div>
+                    </div>
+                    <div class="stat-card" id="sc4">
+                        <div class="stat-card-num" id="stat-done" style="color:#2ed573">—</div>
+                        <div class="stat-card-label">Items done</div>
+                    </div>
+                </div>
+
+                <!-- Debt warning -->
+                <div class="alert-banner warning" id="debt-banner">
+                    <span>⚠</span>
+                    <span id="debt-text"></span>
+                </div>
+
+                <!-- Note input -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">New Meeting Notes</div>
+                    </div>
+                    <div class="panel-body">
+                        <label class="form-label">Meeting title</label>
+                        <input type="text" class="form-input" id="meeting-title"
+                            placeholder="e.g. Sprint Planning — March 3">
+                        <label class="form-label">Raw notes</label>
+                        <textarea class="form-input" id="meeting-notes"
+                            placeholder="Paste messy notes here, one item per line:&#10;&#10;troy - blocked on API spec, needs it asap&#10;deployment pipeline broke, critical blocker&#10;sara - design review thursday, needs sign off"></textarea>
+                        <div style="display:flex;gap:10px;margin-top:14px">
+                            <button class="btn btn-primary" onclick="processNotes()">Clean Notes →</button>
+                            <button class="btn btn-ghost" id="save-btn" style="display:none"
+                                onclick="saveMeeting()">Save Meeting</button>
+                        </div>
+                        <div id="process-error" style="color:#ff4757;font-size:0.75rem;margin-top:8px"></div>
+                    </div>
+                </div>
+
+                <!-- Output -->
+                <div class="panel" id="output-panel" style="display:none">
+                    <div class="panel-header">
+                        <div class="panel-title">Cleaned Output</div>
+                        <div style="font-family:monospace;font-size:0.72rem;color:var(--text3)" id="output-counts">
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="items-list" id="items-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── MEETINGS PAGE ── -->
+            <div class="page" id="page-meetings">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">All Meetings</div>
+                    </div>
+                    <div class="panel-body">
+                        <div id="meetings-list">
+                            <div class="empty">No meetings yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── TEAM PAGE ── -->
+            <div class="page" id="page-team">
+                <div class="panel" style="margin-bottom:20px">
+                    <div class="panel-header">
+                        <div class="panel-title">Team Workload</div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="team-grid" id="team-grid">
+                            <div class="empty">No team members yet. Share your team code.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', e => { cursor.style.left = e.clientX - 4 + 'px'; cursor.style.top = e.clientY - 4 + 'px'; });
+        document.querySelectorAll('a,button,select').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.style.transform = 'scale(3)');
+            el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
+        });
+
+        // ── AUTH ──
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/login';
+
+        function authHeaders() {
+            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        }
+
+        function logout() {
+            fetch('/auth/logout', { method: 'POST', headers: authHeaders() });
+            localStorage.clear();
+            window.location.href = '/';
+        }
+
+        function copyCode() {
+            const code = document.getElementById('team-code').textContent;
+            navigator.clipboard.writeText(code);
+            document.getElementById('team-code').textContent = 'Copied!';
+            setTimeout(() => loadMe(), 1500);
+        }
+
+        // ── NAVIGATION ──
+        function switchPage(name) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + name).classList.add('active');
+            const titles = { notes: 'Clean Notes', meetings: 'Meetings', team: 'Team Workload' };
+            document.getElementById('page-title').textContent = titles[name];
+            if (name === 'meetings') loadMeetings();
+            if (name === 'team') loadTeam();
+        }
+
+        // ── LOAD USER INFO ──
+        async function loadMe() {
+            const res = await fetch('/auth/me', { headers: authHeaders() });
+            if (!res.ok) { window.location.href = '/login'; return; }
+            const data = await res.json();
+            document.getElementById('user-name').textContent = data.name;
+            document.getElementById('user-initial').textContent = data.name[0].toUpperCase();
+
+            const teamRes = await fetch('/team/code', { headers: authHeaders() });
+            if (teamRes.ok) {
+                const t = await teamRes.json();
+                document.getElementById('team-code').textContent = t.code;
+            }
+        }
+
+        // ── LOAD STATS ──
+        async function loadStats() {
+            const [membersRes, meetingsRes] = await Promise.all([
+                fetch('/team/members', { headers: authHeaders() }),
+                fetch('/meetings', { headers: authHeaders() })
+            ]);
+            if (membersRes.ok) {
+                const data = await membersRes.json();
+                const members = data.members;
+                const openHigh = members.reduce((a, m) => a + (m.open_high || 0), 0);
+                const done = members.reduce((a, m) => a + (m.done_items || 0), 0);
+                document.getElementById('stat-open').textContent = openHigh;
+                document.getElementById('stat-members').textContent = members.length;
+                document.getElementById('stat-done').textContent = done;
+
+                // Debt warnings
+                const overloaded = members.filter(m => m.overloaded);
+                if (overloaded.length > 0) {
+                    document.getElementById('debt-text').textContent =
+                        overloaded.map(m => m.name + ' has ' + m.open_high + ' unresolved HIGH items').join(' · ');
+                    document.getElementById('debt-banner').classList.add('show');
+                }
+            }
+            if (meetingsRes.ok) {
+                const data = await meetingsRes.json();
+                document.getElementById('stat-meetings').textContent = data.meetings.length;
+            }
+
+            // Animate stat cards
+            anime({ targets: '.stat-card', opacity: [0, 1], translateY: [10, 0], delay: anime.stagger(80), duration: 500, easing: 'easeOutExpo' });
+        }
+
+        // ── PROCESS NOTES ──
+        let currentPoints = [];
+        async function processNotes() {
+            const title = document.getElementById('meeting-title').value.trim();
+            const notes = document.getElementById('meeting-notes').value.trim();
+            const err = document.getElementById('process-error');
+            if (!notes) { err.textContent = 'Please enter some notes.'; return; }
+            err.textContent = '';
+
+            const res = await fetch('/meetings/process', {
+                method: 'POST', headers: authHeaders(),
+                body: JSON.stringify({ title: title || 'Untitled', notes })
+            });
+            const data = await res.json();
+            if (!res.ok) { err.textContent = data.detail || 'Error processing notes.'; return; }
+
+            currentPoints = data.points;
+            renderItems(data.points);
+            document.getElementById('output-panel').style.display = 'block';
+            document.getElementById('save-btn').style.display = 'inline-block';
+
+            const high = data.points.filter(p => p.priority === 'high').length;
+            const med = data.points.filter(p => p.priority === 'medium').length;
+            const low = data.points.filter(p => p.priority === 'low').length;
+            document.getElementById('output-counts').textContent = high + ' high · ' + med + ' med · ' + low + ' low';
+        }
+
+        // ── RENDER ITEMS ──
+        async function renderItems(points) {
+            // Load team members for assignment dropdown
+            let members = [];
+            const res = await fetch('/team/members', { headers: authHeaders() });
+            if (res.ok) { const d = await res.json(); members = d.members; }
+
+            const list = document.getElementById('items-list');
+            list.innerHTML = points.map((p, i) => `
+    <div class="item-row ${p.priority}">
+      <span class="item-badge">${p.priority.toUpperCase()}</span>
+      <div class="item-body">
+        <div class="item-text">${p.text}</div>
+        <div class="item-meta">
+          <select class="assign-select" onchange="assignItem(${i}, this.value)" id="assign-${i}">
+            <option value="">— Assign to —</option>
+            ${members.map(m => `<option value="${m.id}" ${p.owner_name === m.name ? 'selected' : ''}>${m.name}</option>`).join('')}
+          </select>
+          ${p.owner_name ? '<span class="owner-tag">👤 ' + p.owner_name + '</span>' : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+            anime({ targets: '.item-row', opacity: [0, 1], translateX: [-10, 0], delay: anime.stagger(60), duration: 400, easing: 'easeOutExpo' });
+        }
+
+        function assignItem(index, userId) {
+            if (userId) {
+                currentPoints[index].owner_id = parseInt(userId);
+            }
+        }
+
+        // ── SAVE MEETING ──
+        async function saveMeeting() {
+            const title = document.getElementById('meeting-title').value.trim() || 'Untitled Meeting';
+            const notes = document.getElementById('meeting-notes').value.trim();
+            const res = await fetch('/meetings/save', {
+                method: 'POST', headers: authHeaders(),
+                body: JSON.stringify({ title, notes })
+            });
+            if (res.ok) {
+                document.getElementById('save-btn').textContent = '✓ Saved';
+                document.getElementById('save-btn').disabled = true;
+                loadStats();
+            }
+        }
+
+        // ── LOAD MEETINGS ──
+        async function loadMeetings() {
+            const res = await fetch('/meetings', { headers: authHeaders() });
+            const data = await res.json();
+            const list = document.getElementById('meetings-list');
+            if (!data.meetings.length) { list.innerHTML = '<div class="empty">No meetings yet.</div>'; return; }
+            list.innerHTML = data.meetings.map(m => `
+    <div class="meeting-row">
+      <div>
+        <div class="meeting-row-title">${m.title}</div>
+        <div class="meeting-row-meta">${m.created_at} · ${m.item_count} items</div>
+      </div>
+      <div class="meeting-row-right">
+        <span class="pill pill-high">${m.high_count || 0} high</span>
+        <span class="pill pill-done">${m.done_count || 0} done</span>
+      </div>
+    </div>
+  `).join('');
+        }
+
+        // ── LOAD TEAM ──
+        async function loadTeam() {
+            const res = await fetch('/team/members', { headers: authHeaders() });
+            const data = await res.json();
+            const grid = document.getElementById('team-grid');
+            if (!data.members.length) { grid.innerHTML = '<div class="empty">No team members yet.</div>'; return; }
+            grid.innerHTML = data.members.map(m => {
+                const rate = m.completion_rate || 0;
+                const color = rate >= 80 ? '#2ed573' : rate >= 50 ? '#e8ff47' : '#ff4757';
+                const statusHtml = m.overloaded
+                    ? '<span class="member-status overloaded-badge">⚠ Overloaded</span>'
+                    : rate === 100 ? '<span class="member-status clear-badge">✓ All clear</span>'
+                        : '<span class="member-status ok-badge">— OK</span>';
+                return `
+      <div class="member-card ${m.overloaded ? 'overloaded' : ''}">
+        <div class="member-name">${m.name}</div>
+        <div class="member-role">${m.role}</div>
+        <div class="member-stats">
+          <div class="member-stat"><div class="member-stat-num" style="color:#ff4757">${m.open_items || 0}</div><div class="member-stat-label">Open</div></div>
+          <div class="member-stat"><div class="member-stat-num" style="color:#2ed573">${m.done_items || 0}</div><div class="member-stat-label">Done</div></div>
+          <div class="member-stat"><div class="member-stat-num" style="color:var(--text2)">${m.total_items || 0}</div><div class="member-stat-label">Total</div></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${rate}%;background:${color}"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          ${statusHtml}
+          <span style="font-size:0.68rem;color:var(--text3)">${rate}%</span>
+        </div>
+      </div>
+    `;
+            }).join('');
+            anime({ targets: '.member-card', opacity: [0, 1], translateY: [15, 0], delay: anime.stagger(80), duration: 500, easing: 'easeOutExpo' });
+        }
+
+        // ── INIT ──
+        loadMe();
+        loadStats();
+    </script>
+</body>
+
+</html>

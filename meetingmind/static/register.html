@@ -1,361 +1,813 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MeetingMind — Register</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-<style>
-:root {
-  --bg: #080808; --bg2: #0f0f0f; --bg3: #161616;
-  --border: #1e1e1e; --text: #f0f0f0; --text2: #888;
-  --text3: #444; --accent: #e8ff47; --accent2: #ff4757;
-  --accent3: #47c8ff; --card: #111111; --input-bg: #0a0a0a;
-}
-[data-theme="light"] {
-  --bg: #f5f5f0; --bg2: #efefea; --bg3: #e8e8e3;
-  --border: #ddddd8; --text: #0a0a0a; --text2: #555;
-  --text3: #aaa; --accent: #1a1a1a; --accent2: #c0392b;
-  --accent3: #0066cc; --card: #ffffff; --input-bg: #f8f8f4;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'DM Mono', monospace;
-  background: var(--bg); color: var(--text);
-  min-height: 100vh; display: flex;
-  align-items: center; justify-content: center;
-  overflow-x: hidden; position: relative;
-  transition: background 0.4s, color 0.4s;
-  padding: 100px 20px 40px;
-}
-.bg-canvas { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
-.bg-grid {
-  position: absolute; inset: 0;
-  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 48px 48px; opacity: 0.5;
-  animation: gridMove 20s linear infinite;
-}
-@keyframes gridMove { 0% { transform: translateY(0); } 100% { transform: translateY(48px); } }
-.bg-glow { position: absolute; border-radius: 50%; filter: blur(80px); animation: glowFloat 8s ease-in-out infinite; }
-.bg-glow-1 { width: 500px; height: 500px; background: rgba(71,200,255,0.05); top: -150px; left: -150px; }
-.bg-glow-2 { width: 400px; height: 400px; background: rgba(232,255,71,0.04); bottom: -100px; right: -100px; animation-delay: -4s; }
-@keyframes glowFloat { 0%,100% { transform: translate(0,0); } 50% { transform: translate(15px,-15px); } }
-.particle { position: absolute; width: 2px; height: 2px; background: var(--accent3); border-radius: 50%; opacity: 0; animation: particleFloat linear infinite; }
-@keyframes particleFloat { 0% { transform: translateY(100vh); opacity: 0; } 10% { opacity: 0.5; } 90% { opacity: 0.2; } 100% { transform: translateY(-10vh) translateX(var(--drift)); opacity: 0; } }
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 48px;
-}
-.nav-logo { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 8px; }
-.logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
-.theme-toggle { width: 36px; height: 20px; background: var(--border); border-radius: 10px; border: none; cursor: pointer; position: relative; display: flex; align-items: center; padding: 2px; transition: background 0.3s; }
-.theme-toggle::after { content: ''; width: 16px; height: 16px; border-radius: 50%; background: var(--text); transition: transform 0.3s; }
-[data-theme="light"] .theme-toggle::after { transform: translateX(16px); }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MeetingMind — Register</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <style>
+    :root {
+      --bg: #080808;
+      --bg2: #0f0f0f;
+      --bg3: #161616;
+      --border: #1e1e1e;
+      --text: #f0f0f0;
+      --text2: #888;
+      --text3: #444;
+      --accent: #e8ff47;
+      --accent2: #ff4757;
+      --accent3: #47c8ff;
+      --card: #111111;
+      --input-bg: #0a0a0a;
+    }
 
-.form-container { position: relative; z-index: 10; width: 100%; max-width: 460px; opacity: 0; }
-.form-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 48px 40px; box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02); }
-.form-eyebrow { font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-.form-eyebrow::before { content: ''; width: 16px; height: 1px; background: var(--text3); }
-.form-title { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; letter-spacing: -1.5px; line-height: 1; margin-bottom: 8px; }
-.form-title em { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; color: var(--accent3); }
-.form-subtitle { font-size: 0.78rem; color: var(--text2); margin-bottom: 36px; line-height: 1.6; }
+    [data-theme="light"] {
+      --bg: #f5f5f0;
+      --bg2: #efefea;
+      --bg3: #e8e8e3;
+      --border: #ddddd8;
+      --text: #0a0a0a;
+      --text2: #555;
+      --text3: #aaa;
+      --accent: #1a1a1a;
+      --accent2: #c0392b;
+      --accent3: #0066cc;
+      --card: #ffffff;
+      --input-bg: #f8f8f4;
+    }
 
-/* Role selector */
-.role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-.role-option { position: relative; }
-.role-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
-.role-label-card {
-  display: flex; flex-direction: column; gap: 4px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
-  background: var(--input-bg);
-}
-.role-option input:checked + .role-label-card {
-  border-color: var(--accent);
-  background: rgba(232,255,71,0.04);
-}
-.role-label-card .role-name { font-size: 0.82rem; font-weight: 500; color: var(--text); }
-.role-label-card .role-desc { font-size: 0.68rem; color: var(--text3); line-height: 1.4; }
-.role-option input:checked + .role-label-card .role-name { color: var(--accent); }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-.form-group { margin-bottom: 18px; }
-.form-label { display: block; font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
-.form-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--text); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,255,71,0.08); }
-.form-input::placeholder { color: var(--text3); }
-.form-input-wrapper { position: relative; }
-.form-input-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 0.75rem; cursor: pointer; transition: color 0.2s; }
-.form-input-icon:hover { color: var(--text2); }
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+      transition: background 0.4s, color 0.4s;
+      padding: 100px 20px 40px;
+    }
 
-/* Password strength */
-.password-strength { margin-top: 8px; }
-.strength-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; margin-bottom: 4px; }
-.strength-fill { height: 100%; width: 0%; border-radius: 1px; transition: width 0.3s, background 0.3s; }
-.strength-label { font-size: 0.65rem; color: var(--text3); }
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
 
-/* Team code */
-.team-code-hint { font-size: 0.68rem; color: var(--text3); margin-top: 6px; line-height: 1.5; }
-.team-code-hint a { color: var(--accent); text-decoration: none; }
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.5;
+      animation: gridMove 20s linear infinite;
+    }
 
-.btn-submit { width: 100%; padding: 14px; background: var(--accent); color: var(--bg); border: none; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 0.82rem; font-weight: 500; letter-spacing: 0.5px; cursor: pointer; margin-top: 8px; transition: opacity 0.2s, transform 0.2s; }
-.btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-submit.loading { opacity: 0.7; cursor: not-allowed; }
-.btn-submit-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.spinner-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--bg); display: none; animation: spinDot 0.6s ease-in-out infinite alternate; }
-.spinner-dot:nth-child(2) { animation-delay: 0.2s; }
-.spinner-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes spinDot { from { opacity: 0.3; } to { opacity: 1; } }
-.loading .spinner-dot { display: block; }
-.loading .btn-text { display: none; }
+    @keyframes gridMove {
+      0% {
+        transform: translateY(0);
+      }
 
-.form-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; }
-.form-divider::before, .form-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.form-divider span { font-size: 0.7rem; color: var(--text3); white-space: nowrap; }
-.form-footer { text-align: center; font-size: 0.75rem; color: var(--text2); margin-top: 24px; }
-.form-footer a { color: var(--accent); text-decoration: none; }
-.form-alert { padding: 12px 14px; border-radius: 6px; font-size: 0.75rem; margin-bottom: 20px; display: none; }
-.form-alert.error { background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.2); color: #ff4757; }
-.form-alert.success { background: rgba(232,255,71,0.08); border: 1px solid rgba(232,255,71,0.2); color: var(--accent); }
-.form-alert.show { display: block; }
+      100% {
+        transform: translateY(48px);
+      }
+    }
 
-/* Progress steps */
-.form-steps { display: flex; gap: 6px; margin-bottom: 32px; }
-.form-step { height: 2px; flex: 1; border-radius: 1px; background: var(--border); transition: background 0.3s; }
-.form-step.active { background: var(--accent); }
-.form-step.done { background: var(--accent); opacity: 0.4; }
+    .bg-glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: glowFloat 8s ease-in-out infinite;
+    }
 
-.cursor { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999; transition: transform 0.15s; mix-blend-mode: difference; }
-</style>
+    .bg-glow-1 {
+      width: 500px;
+      height: 500px;
+      background: rgba(71, 200, 255, 0.05);
+      top: -150px;
+      left: -150px;
+    }
+
+    .bg-glow-2 {
+      width: 400px;
+      height: 400px;
+      background: rgba(232, 255, 71, 0.04);
+      bottom: -100px;
+      right: -100px;
+      animation-delay: -4s;
+    }
+
+    @keyframes glowFloat {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(15px, -15px);
+      }
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--accent3);
+      border-radius: 50%;
+      opacity: 0;
+      animation: particleFloat linear infinite;
+    }
+
+    @keyframes particleFloat {
+      0% {
+        transform: translateY(100vh);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 0.5;
+      }
+
+      90% {
+        opacity: 0.2;
+      }
+
+      100% {
+        transform: translateY(-10vh) translateX(var(--drift));
+        opacity: 0;
+      }
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+    }
+
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    .theme-toggle {
+      width: 36px;
+      height: 20px;
+      background: var(--border);
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: background 0.3s;
+    }
+
+    .theme-toggle::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--text);
+      transition: transform 0.3s;
+    }
+
+    [data-theme="light"] .theme-toggle::after {
+      transform: translateX(16px);
+    }
+
+    .form-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 460px;
+      opacity: 0;
+    }
+
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .form-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-eyebrow::before {
+      content: '';
+      width: 16px;
+      height: 1px;
+      background: var(--text3);
+    }
+
+    .form-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .form-title em {
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-weight: 400;
+      color: var(--accent3);
+    }
+
+    .form-subtitle {
+      font-size: 0.78rem;
+      color: var(--text2);
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    /* Role selector */
+    .role-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .role-option {
+      position: relative;
+    }
+
+    .role-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .role-label-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--input-bg);
+    }
+
+    .role-option input:checked+.role-label-card {
+      border-color: var(--accent);
+      background: rgba(232, 255, 71, 0.04);
+    }
+
+    .role-label-card .role-name {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .role-label-card .role-desc {
+      font-size: 0.68rem;
+      color: var(--text3);
+      line-height: 1.4;
+    }
+
+    .role-option input:checked+.role-label-card .role-name {
+      color: var(--accent);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232, 255, 71, 0.08);
+    }
+
+    .form-input::placeholder {
+      color: var(--text3);
+    }
+
+    .form-input-wrapper {
+      position: relative;
+    }
+
+    .form-input-icon {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .form-input-icon:hover {
+      color: var(--text2);
+    }
+
+    /* Password strength */
+    .password-strength {
+      margin-top: 8px;
+    }
+
+    .strength-bar {
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .strength-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 1px;
+      transition: width 0.3s, background 0.3s;
+    }
+
+    .strength-label {
+      font-size: 0.65rem;
+      color: var(--text3);
+    }
+
+    /* Team code */
+    .team-code-hint {
+      font-size: 0.68rem;
+      color: var(--text3);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .team-code-hint a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .btn-submit:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-submit.loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn-submit-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .spinner-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--bg);
+      display: none;
+      animation: spinDot 0.6s ease-in-out infinite alternate;
+    }
+
+    .spinner-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .spinner-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes spinDot {
+      from {
+        opacity: 0.3;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .loading .spinner-dot {
+      display: block;
+    }
+
+    .loading .btn-text {
+      display: none;
+    }
+
+    .form-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    .form-divider::before,
+    .form-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .form-divider span {
+      font-size: 0.7rem;
+      color: var(--text3);
+      white-space: nowrap;
+    }
+
+    .form-footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text2);
+      margin-top: 24px;
+    }
+
+    .form-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .form-alert {
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .form-alert.error {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid rgba(255, 71, 87, 0.2);
+      color: #ff4757;
+    }
+
+    .form-alert.success {
+      background: rgba(232, 255, 71, 0.08);
+      border: 1px solid rgba(232, 255, 71, 0.2);
+      color: var(--accent);
+    }
+
+    .form-alert.show {
+      display: block;
+    }
+
+    /* Progress steps */
+    .form-steps {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 32px;
+    }
+
+    .form-step {
+      height: 2px;
+      flex: 1;
+      border-radius: 1px;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+
+    .form-step.active {
+      background: var(--accent);
+    }
+
+    .form-step.done {
+      background: var(--accent);
+      opacity: 0.4;
+    }
+
+    .cursor {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.15s;
+      mix-blend-mode: difference;
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="cursor" id="cursor"></div>
-<div class="bg-canvas">
-  <div class="bg-grid"></div>
-  <div class="bg-glow bg-glow-1"></div>
-  <div class="bg-glow bg-glow-2"></div>
-  <div class="bg-particles" id="particles"></div>
-</div>
-
-<nav>
-  <a href="landing.html" class="nav-logo"><span class="logo-dot"></span>MeetingMind</a>
-  <button class="theme-toggle" onclick="toggleTheme()"></button>
-</nav>
-
-<div class="form-container" id="form-container">
-  <div class="form-card">
-    <div class="form-eyebrow">Join MeetingMind</div>
-    <h1 class="form-title">Create your <em>account</em></h1>
-    <p class="form-subtitle">Set up your profile and join your team in seconds.</p>
-
-    <!-- Progress indicator -->
-    <div class="form-steps">
-      <div class="form-step active" id="step-1"></div>
-      <div class="form-step" id="step-2"></div>
-      <div class="form-step" id="step-3"></div>
-    </div>
-
-    <div class="form-alert" id="alert"></div>
-
-    <form id="register-form" onsubmit="handleRegister(event)">
-
-      <!-- Role selection -->
-      <div class="form-group">
-        <label class="form-label">I am a</label>
-        <div class="role-selector">
-          <div class="role-option">
-            <input type="radio" name="role" id="role-manager" value="manager" checked onchange="updateSteps()">
-            <label class="role-label-card" for="role-manager">
-              <span class="role-name">Manager</span>
-              <span class="role-desc">Clean notes, assign tasks, view team progress</span>
-            </label>
-          </div>
-          <div class="role-option">
-            <input type="radio" name="role" id="role-member" value="member" onchange="updateSteps()">
-            <label class="role-label-card" for="role-member">
-              <span class="role-name">Team Member</span>
-              <span class="role-desc">View my tasks, update progress, mark done</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Name -->
-      <div class="form-group">
-        <label class="form-label">Full name</label>
-        <input type="text" class="form-input" id="name" placeholder="Vijayaditya" required autocomplete="name" oninput="updateSteps()">
-      </div>
-
-      <!-- Email -->
-      <div class="form-group">
-        <label class="form-label">Email address</label>
-        <input type="email" class="form-input" id="email" placeholder="you@company.com" required autocomplete="email" oninput="updateSteps()">
-      </div>
-
-      <!-- Password -->
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <div class="form-input-wrapper">
-          <input type="password" class="form-input" id="password" placeholder="min. 8 characters" required autocomplete="new-password" oninput="checkStrength(this.value); updateSteps();" style="padding-right:44px">
-          <span class="form-input-icon" onclick="togglePassword()">show</span>
-        </div>
-        <div class="password-strength">
-          <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
-          <div class="strength-label" id="strength-label"></div>
-        </div>
-      </div>
-
-      <!-- Team code -->
-      <div class="form-group">
-        <label class="form-label">Team code <span style="color:var(--text3); font-size:0.6rem">(optional for managers)</span></label>
-        <input type="text" class="form-input" id="team-code" placeholder="e.g. ACME-2024" autocomplete="off" oninput="updateSteps()" style="letter-spacing:2px; text-transform:uppercase">
-        <div class="team-code-hint" id="team-hint">
-          Managers: leave blank to create a new team, or enter a code to join an existing one.<br>
-          Members: enter the code your manager shared with you.
-        </div>
-      </div>
-
-      <button type="submit" class="btn-submit" id="submit-btn">
-        <div class="btn-submit-inner">
-          <span class="btn-text">Create account →</span>
-          <span class="spinner-dot"></span>
-          <span class="spinner-dot"></span>
-          <span class="spinner-dot"></span>
-        </div>
-      </button>
-    </form>
-
-    <div class="form-divider"><span>already have an account?</span></div>
-    <div class="form-footer"><a href="login.html">Sign in instead →</a></div>
+  <div class="cursor" id="cursor"></div>
+  <div class="bg-canvas">
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-particles" id="particles"></div>
   </div>
-</div>
 
-<script>
-const cursor = document.getElementById('cursor');
-document.addEventListener('mousemove', e => {
-  cursor.style.left = e.clientX - 4 + 'px';
-  cursor.style.top = e.clientY - 4 + 'px';
-});
-document.querySelectorAll('a, button, input, label').forEach(el => {
-  el.addEventListener('mouseenter', () => cursor.style.transform = 'scale(3)');
-  el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
-});
+  <nav>
+    <a href="/" class="nav-logo"><span class="logo-dot"></span>MeetingMind</a>
+    <button class="theme-toggle" onclick="toggleTheme()"></button>
+  </nav>
 
-function toggleTheme() {
-  const html = document.documentElement;
-  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-}
+  <div class="form-container" id="form-container">
+    <div class="form-card">
+      <div class="form-eyebrow">Join MeetingMind</div>
+      <h1 class="form-title">Create your <em>account</em></h1>
+      <p class="form-subtitle">Set up your profile and join your team in seconds.</p>
 
-// Particles
-const container = document.getElementById('particles');
-for (let i = 0; i < 15; i++) {
-  const p = document.createElement('div');
-  p.className = 'particle';
-  p.style.left = Math.random() * 100 + 'vw';
-  p.style.setProperty('--drift', (Math.random() - 0.5) * 80 + 'px');
-  p.style.animationDuration = (10 + Math.random() * 15) + 's';
-  p.style.animationDelay = -(Math.random() * 25) + 's';
-  container.appendChild(p);
-}
+      <!-- Progress indicator -->
+      <div class="form-steps">
+        <div class="form-step active" id="step-1"></div>
+        <div class="form-step" id="step-2"></div>
+        <div class="form-step" id="step-3"></div>
+      </div>
 
-// Entrance
-anime({ targets: '#form-container', opacity: [0,1], translateY: [30,0], duration: 800, easing: 'easeOutExpo', delay: 200 });
+      <div class="form-alert" id="alert"></div>
 
-function togglePassword() {
-  const input = document.getElementById('password');
-  const icon = input.nextElementSibling;
-  input.type = input.type === 'password' ? 'text' : 'password';
-  icon.textContent = input.type === 'password' ? 'show' : 'hide';
-}
+      <form id="register-form" onsubmit="handleRegister(event)">
 
-function checkStrength(val) {
-  const fill = document.getElementById('strength-fill');
-  const label = document.getElementById('strength-label');
-  let score = 0;
-  if (val.length >= 8) score++;
-  if (/[A-Z]/.test(val)) score++;
-  if (/[0-9]/.test(val)) score++;
-  if (/[^A-Za-z0-9]/.test(val)) score++;
-  const configs = [
-    { w: '0%', c: 'transparent', l: '' },
-    { w: '25%', c: '#ff4757', l: 'Weak' },
-    { w: '50%', c: '#ff6b35', l: 'Fair' },
-    { w: '75%', c: '#e8ff47', l: 'Good' },
-    { w: '100%', c: '#2ed573', l: 'Strong' },
-  ];
-  const cfg = configs[score];
-  fill.style.width = cfg.w;
-  fill.style.background = cfg.c;
-  label.textContent = cfg.l;
-  label.style.color = cfg.c;
-}
+        <!-- Role selection -->
+        <div class="form-group">
+          <label class="form-label">I am a</label>
+          <div class="role-selector">
+            <div class="role-option">
+              <input type="radio" name="role" id="role-manager" value="manager" checked onchange="updateSteps()">
+              <label class="role-label-card" for="role-manager">
+                <span class="role-name">Manager</span>
+                <span class="role-desc">Clean notes, assign tasks, view team progress</span>
+              </label>
+            </div>
+            <div class="role-option">
+              <input type="radio" name="role" id="role-member" value="member" onchange="updateSteps()">
+              <label class="role-label-card" for="role-member">
+                <span class="role-name">Team Member</span>
+                <span class="role-desc">View my tasks, update progress, mark done</span>
+              </label>
+            </div>
+          </div>
+        </div>
 
-function updateSteps() {
-  const name = document.getElementById('name').value;
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
-  let filled = 0;
-  if (name) filled++;
-  if (email) filled++;
-  if (password.length >= 8) filled++;
-  steps.forEach((s, i) => {
-    s.className = 'form-step' + (i < filled ? ' done' : '') + (i === filled ? ' active' : '');
-  });
-}
+        <!-- Name -->
+        <div class="form-group">
+          <label class="form-label">Full name</label>
+          <input type="text" class="form-input" id="name" placeholder="Vijayaditya" required autocomplete="name"
+            oninput="updateSteps()">
+        </div>
 
-function showAlert(msg, type) {
-  const alert = document.getElementById('alert');
-  alert.textContent = msg;
-  alert.className = 'form-alert show ' + type;
-}
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          <input type="email" class="form-input" id="email" placeholder="you@company.com" required autocomplete="email"
+            oninput="updateSteps()">
+        </div>
 
-async function handleRegister(e) {
-  e.preventDefault();
-  const btn = document.getElementById('submit-btn');
-  const name = document.getElementById('name').value;
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const role = document.querySelector('input[name="role"]:checked').value;
-  const teamCode = document.getElementById('team-code').value.trim().toUpperCase();
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="form-input-wrapper">
+            <input type="password" class="form-input" id="password" placeholder="min. 8 characters" required
+              autocomplete="new-password" oninput="checkStrength(this.value); updateSteps();"
+              style="padding-right:44px">
+            <span class="form-input-icon" onclick="togglePassword()">show</span>
+          </div>
+          <div class="password-strength">
+            <div class="strength-bar">
+              <div class="strength-fill" id="strength-fill"></div>
+            </div>
+            <div class="strength-label" id="strength-label"></div>
+          </div>
+        </div>
 
-  if (password.length < 8) {
-    showAlert('Password must be at least 8 characters.', 'error');
-    return;
-  }
+        <!-- Team code -->
+        <div class="form-group">
+          <label class="form-label">Team code <span style="color:var(--text3); font-size:0.6rem">(optional for
+              managers)</span></label>
+          <input type="text" class="form-input" id="team-code" placeholder="e.g. ACME-2024" autocomplete="off"
+            oninput="updateSteps()" style="letter-spacing:2px; text-transform:uppercase">
+          <div class="team-code-hint" id="team-hint">
+            Managers: leave blank to create a new team, or enter a code to join an existing one.<br>
+            Members: enter the code your manager shared with you.
+          </div>
+        </div>
 
-  btn.classList.add('loading');
+        <button type="submit" class="btn-submit" id="submit-btn">
+          <div class="btn-submit-inner">
+            <span class="btn-text">Create account →</span>
+            <span class="spinner-dot"></span>
+            <span class="spinner-dot"></span>
+            <span class="spinner-dot"></span>
+          </div>
+        </button>
+      </form>
 
-  try {
-    const res = await fetch('/auth/register', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ name, email, password, role, team_code: teamCode || null })
+      <div class="form-divider"><span>already have an account?</span></div>
+      <div class="form-footer"><a href="/login">Sign in instead →</a></div>
+    </div>
+  </div>
+
+  <script>
+    const cursor = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX - 4 + 'px';
+      cursor.style.top = e.clientY - 4 + 'px';
     });
-    const data = await res.json();
+    document.querySelectorAll('a, button, input, label').forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.style.transform = 'scale(3)');
+      el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
+    });
 
-    if (!res.ok) {
-      showAlert(data.detail || 'Registration failed.', 'error');
-      anime({ targets: '#form-container', translateX: [-8, 8, -6, 6, 0], duration: 400, easing: 'easeInOutSine' });
-    } else {
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('role', data.role);
-      showAlert('Account created! Taking you to your dashboard...', 'success');
-      setTimeout(() => {
-        window.location.href = data.role === 'manager' ? '/dashboard' : '/tasks';
-      }, 1000);
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
-  } catch(err) {
-    showAlert('Connection error. Is the server running?', 'error');
-  } finally {
-    btn.classList.remove('loading');
-  }
-}
-</script>
+
+    // Particles
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 15; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.setProperty('--drift', (Math.random() - 0.5) * 80 + 'px');
+      p.style.animationDuration = (10 + Math.random() * 15) + 's';
+      p.style.animationDelay = -(Math.random() * 25) + 's';
+      container.appendChild(p);
+    }
+
+    // Entrance
+    anime({ targets: '#form-container', opacity: [0, 1], translateY: [30, 0], duration: 800, easing: 'easeOutExpo', delay: 200 });
+
+    function togglePassword() {
+      const input = document.getElementById('password');
+      const icon = input.nextElementSibling;
+      input.type = input.type === 'password' ? 'text' : 'password';
+      icon.textContent = input.type === 'password' ? 'show' : 'hide';
+    }
+
+    function checkStrength(val) {
+      const fill = document.getElementById('strength-fill');
+      const label = document.getElementById('strength-label');
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const configs = [
+        { w: '0%', c: 'transparent', l: '' },
+        { w: '25%', c: '#ff4757', l: 'Weak' },
+        { w: '50%', c: '#ff6b35', l: 'Fair' },
+        { w: '75%', c: '#e8ff47', l: 'Good' },
+        { w: '100%', c: '#2ed573', l: 'Strong' },
+      ];
+      const cfg = configs[score];
+      fill.style.width = cfg.w;
+      fill.style.background = cfg.c;
+      label.textContent = cfg.l;
+      label.style.color = cfg.c;
+    }
+
+    function updateSteps() {
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
+      let filled = 0;
+      if (name) filled++;
+      if (email) filled++;
+      if (password.length >= 8) filled++;
+      steps.forEach((s, i) => {
+        s.className = 'form-step' + (i < filled ? ' done' : '') + (i === filled ? ' active' : '');
+      });
+    }
+
+    function showAlert(msg, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = msg;
+      alert.className = 'form-alert show ' + type;
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const role = document.querySelector('input[name="role"]:checked').value;
+      const teamCode = document.getElementById('team-code').value.trim().toUpperCase();
+
+      if (password.length < 8) {
+        showAlert('Password must be at least 8 characters.', 'error');
+        return;
+      }
+
+      btn.classList.add('loading');
+
+      try {
+        const res = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, role, team_code: teamCode || null })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showAlert(data.detail || 'Registration failed.', 'error');
+          anime({ targets: '#form-container', translateX: [-8, 8, -6, 6, 0], duration: 400, easing: 'easeInOutSine' });
+        } else {
+          localStorage.setItem('token', data.access_token);
+          localStorage.setItem('role', data.role);
+          showAlert('Account created! Taking you to your dashboard...', 'success');
+          setTimeout(() => {
+            window.location.href = data.role === 'manager' ? '/dashboard' : '/tasks';
+          }, 1000);
+        }
+      } catch (err) {
+        showAlert('Connection error. Is the server running?', 'error');
+      } finally {
+        btn.classList.remove('loading');
+      }
+    }
+  </script>
 </body>
+
 </html>
