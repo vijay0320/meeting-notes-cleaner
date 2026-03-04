@@ -1,6 +1,6 @@
 """
 Meeting Notes Cleaner v2
-Features: owner detection, action item tracker (SQLite), priority engine, meeting health score
+Features: flan-t5-small ML cleaning, owner detection, action item tracker (SQLite), priority engine, meeting health score
 """
 
 import warnings
@@ -14,10 +14,19 @@ from db import get_all_meetings, get_meeting_debt
 import whisper
 import tempfile
 import os
+import torch
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 
 print("Loading Whisper model...")
 _whisper_model = whisper.load_model("base", device="cpu")
 print("Whisper ready.")
+
+print("Loading flan-t5 model from HuggingFace...")
+_device = torch.device("cpu")
+_tokenizer = T5Tokenizer.from_pretrained("sunny0320/meeting-notes-cleaner-v2")
+_model = T5ForConditionalGeneration.from_pretrained("sunny0320/meeting-notes-cleaner-v2").to(_device)
+_model.eval()
+print("flan-t5 ready.")
 
 app = Flask(__name__, static_folder="static")
 DB = "meetings.db"
@@ -81,13 +90,20 @@ def detect_owner(text):
         if token in text.lower(): return format_owner(token)
     return None
 
-def clean_item(text):
-    text = re.sub(r'^[\-\*\•\d\.\)]+\s*', '', text).strip()
-    text = re.sub(r'^([A-Za-z][a-z]*(?:\s+[a-z]+)?)\s*[-:]\s*',
-                  lambda m: m.group(1).capitalize() + ': ', text)
-    text = text[0].upper() + text[1:] if text else text
-    if text and not text.endswith(('.', '!', '?')): text += '.'
-    return text
+def ml_clean(text):
+    """Use flan-t5 to clean and rewrite a raw meeting note."""
+    prompt = f"Clean this meeting note into a clear action item: {text}"
+    inputs = _tokenizer(prompt, return_tensors="pt", max_length=128, truncation=True).to(_device)
+    with torch.no_grad():
+        outputs = _model.generate(**inputs, max_new_tokens=64)
+    cleaned = _tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+    # Fallback to basic clean if model returns empty or too short
+    if not cleaned or len(cleaned) < 5:
+        cleaned = text
+    cleaned = cleaned[0].upper() + cleaned[1:] if cleaned else cleaned
+    if cleaned and not cleaned.endswith(('.', '!', '?')):
+        cleaned += '.'
+    return cleaned
 
 def split_notes(raw_notes):
     lines = re.split(r'\n|\r\n', raw_notes)
@@ -106,7 +122,7 @@ def process_notes(raw_notes):
     results = []
     for item in items:
         results.append({
-            "text": clean_item(item),
+            "text": ml_clean(item),
             "priority": flag_priority(item),
             "owner": detect_owner(item) or "Unassigned",
             "status": "todo"
