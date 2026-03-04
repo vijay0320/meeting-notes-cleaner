@@ -56,7 +56,7 @@ Train/Val/Test split — 363 / 39 / 15
         ↓
 Fine-tune flan-t5-small — 5 epochs, CPU, ~20 mins on M1
         ↓
-my_meeting_model_v2/ (293MB, not committed)
+my_meeting_model_v2/ (hosted on HuggingFace: sunny0320/meeting-notes-cleaner-v2)
 ```
 
 ### Training Results
