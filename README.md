@@ -12,7 +12,9 @@
 
 ## Demo
 
-https://github.com/vijay0320/meeting-notes-cleaner/releases/download/v22.0/meeting_mind.mp4
+https://youtu.be/F28eYMKy2pA
+
+![MeetingMind Demo](assets/demo.gif)
 
 ![MeetingMind Demo](assets/demo.gif)
 
