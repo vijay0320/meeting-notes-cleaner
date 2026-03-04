@@ -12,7 +12,9 @@
 
 ## Demo
 
-▶ [Watch the full demo on Loom](https://www.loom.com/share/78aefbd7dca143e39f5515a3b99d465e)
+
+
+<video src="https://github.com/vijay0320/meeting-notes-cleaner/releases/download/v22.0/meeting_mind.mp4" controls width="100%"></video>
 
 ![MeetingMind Demo](assets/demo.gif)
 
