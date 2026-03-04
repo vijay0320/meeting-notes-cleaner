@@ -217,7 +217,7 @@ pytest tests/ -v
 git clone https://github.com/vijay0320/meeting-notes-cleaner
 cd meeting-notes-cleaner
 
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
