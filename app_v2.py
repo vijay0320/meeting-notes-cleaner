@@ -177,6 +177,10 @@ def is_messy(text):
 def post_process(text):
     text = re.sub(r'\bhas crashes\b', 'has crashed', text)
     text = re.sub(r'\bbeen review\b', 'been reviewed', text)
+    text = re.sub(r'\bProductionapi\b', 'Production API', text)
+    text = re.sub(r'\bproductionapi\b', 'production API', text)
+    text = re.sub(r'([a-z])(API|SSL|DB|UI|UX|HR|QA|CEO|CTO|CFO)', r'\1 \2', text)
+    text = re.sub(r'\. ([a-z])', lambda m: '. ' + m.group(1).upper(), text)
     # Fix missing spaces before capitalized words
     text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
     # Fix "complete down" -> "completely down"
