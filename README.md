@@ -12,9 +12,7 @@
 
 ## Demo
 
-
-
-<video src="https://github.com/vijay0320/meeting-notes-cleaner/releases/download/v22.0/meeting_mind.mp4" controls width="100%"></video>
+https://github.com/vijay0320/meeting-notes-cleaner/releases/download/v22.0/meeting_mind.mp4
 
 ![MeetingMind Demo](assets/demo.gif)
 
@@ -323,6 +321,8 @@ meeting-notes-cleaner/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── static/index.html       # Single-user UI
+├── assets/
+│   └── demo.gif            # Demo animation
 ├── tests/                  # 43 unit tests
 ├── .github/workflows/      # CI/CD
 └── meetingmind/            # Multi-user SaaS
@@ -365,4 +365,4 @@ meeting-notes-cleaner/
 | v17.0 | Manager workload view + member detail panel |
 | v18.0 | Email notifications |
 | v19.0 — v21.0 | README updates, .gitattributes, ML-first rewrite |
-| v22.0 | Demo video added |
+| v22.0 | Demo GIF + video added |
