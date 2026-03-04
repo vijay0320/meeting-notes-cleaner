@@ -7,6 +7,7 @@
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-yellow)](https://huggingface.co)
 [![Tests](https://img.shields.io/badge/Tests-43%2F43-green)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue)](Dockerfile)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Railway-blueviolet)](https://meeting-notes-cleaner-production.up.railway.app)
 
 ---
 
