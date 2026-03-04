@@ -14,7 +14,7 @@
 
 ▶ [Watch the full demo on Loom](https://www.loom.com/share/78aefbd7dca143e39f5515a3b99d465e)
 
-[![Demo](https://img.shields.io/badge/Demo-Watch%20on%20Loom-orange)](https://www.loom.com/share/78aefbd7dca143e39f5515a3b99d465e)
+![MeetingMind Demo](assets/demo.gif)
 
 ---
 
