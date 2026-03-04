@@ -26,3 +26,4 @@ meeting_mind.mov
 aug_train_v2.json
 aug_val_v2.json
 aug_test_v2.json
+fix_*.py
