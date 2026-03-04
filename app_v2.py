@@ -173,6 +173,10 @@ def is_messy(text):
 def post_process(text):
     text = re.sub(r'\bhas crashes\b', 'has crashed', text)
     text = re.sub(r'\bbeen review\b', 'been reviewed', text)
+    # Fix missing spaces before capitalized words
+    text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
+    # Fix "complete down" -> "completely down"
+    text = re.sub(r'\bcomplete down\b', 'completely down', text)
     return text
 
 def ml_clean(text):
