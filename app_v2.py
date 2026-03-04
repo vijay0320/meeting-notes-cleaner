@@ -255,6 +255,10 @@ def process_notes(raw_notes):
     results.sort(key=lambda x: order[x["priority"]])
     return results
 
+@app.route("/health")
+def health():
+    return {"status": "ok"}, 200
+
 @app.route("/")
 def index():
     return send_from_directory("static", "index.html")

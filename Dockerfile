@@ -21,3 +21,6 @@ COPY static/ static/
 EXPOSE 8080
 
 CMD ["python", "app_v2.py"]
+
+HEALTHCHECK --interval=30s --timeout=60s --start-period=300s --retries=5 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
