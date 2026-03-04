@@ -120,7 +120,12 @@ def has_action(text):
     has_deadline = any(d in text_lower for d in DEADLINE_WORDS)
     is_question = text.strip().endswith('?')
     is_short = len(text.split()) < 6
-    return (has_verb or has_deadline) and not is_question and not is_short
+    # Exclude pure context/acknowledgement sentences
+    exclude_starts = ["thanks", "thank you", "yes,", "no,", "okay", "great", "sounds good",
+                      "that makes sense", "that's", "this is", "i see", "i agree", "i understand",
+                      "based on", "from a customer", "right now average"]
+    starts_with_exclude = any(text_lower.startswith(e) for e in exclude_starts)
+    return (has_verb or has_deadline) and not is_question and not is_short and not starts_with_exclude
 
 def normalize_pronouns(text, speaker):
     text = re.sub(r"\bI'll\b", f"{speaker} will", text)
