@@ -92,7 +92,7 @@ def detect_owner(text):
 
 def ml_clean(text):
     """Use flan-t5 to clean and rewrite a raw meeting note."""
-    prompt = f"Clean this meeting note into a clear action item: {text}"
+    prompt = f"Rewrite as a professional action item, fix typos, remove filler words: {text}"
     inputs = _tokenizer(prompt, return_tensors="pt", max_length=128, truncation=True).to(_device)
     with torch.no_grad():
         outputs = _model.generate(**inputs, max_new_tokens=64)
