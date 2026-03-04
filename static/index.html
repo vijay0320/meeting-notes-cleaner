@@ -25,7 +25,7 @@ textarea:focus { border-color: #444; }
 .btn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
 .btn-ghost { background: transparent; border: 1px solid #333; color: #888; }
 .btn-ghost:hover { background: #222; color: #e8e8e8; }
-.spinner { display: none; margin-top: 14px; font-family: monospace; font-size: 0.8rem; color: #555; }
+.spinner { display: none; margin-top: 14px; font-family: monospace; font-size: 0.9rem; color: #c8ff00; font-weight: bold; animation: pulse 1.5s infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .results-title { font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase; color: #555; font-family: monospace; }
 .counts { font-family: monospace; font-size: 0.75rem; }
@@ -84,7 +84,7 @@ textarea:focus { border-color: #444; }
         <button class="btn btn-ghost" id="export-pdf-btn" style="display:none" onclick="exportPDF()">&#8595; Export PDF</button>
         <div id="record-status" style="font-family:monospace; font-size:0.75rem; color:#555; margin-top:8px; display:none"></div>
       </div>
-      <div class="spinner" id="spinner">processing...</div>
+      <div class="spinner" id="spinner">⚙️ Cleaning notes with flan-t5-base ML model... (10-30s on first run)</div>
       <div class="error" id="error"></div>
     </div>
     <div class="panel" id="results" style="display:none">
