@@ -4,6 +4,9 @@ Multi-user, JWT auth, role-based access, SSE real-time updates
 """
 import os
 import re
+import gc
+import torch
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 import string
 import random
 import asyncio
@@ -116,6 +119,53 @@ def split_notes(raw: str) -> list:
             part = part.strip().rstrip('.')
             if len(part) > 5: items.append(part)
     return items
+
+# ── ML Model ─────────────────────────────────────────────────────────────────
+print("Loading flan-t5-base for MeetingMind...")
+_device = torch.device("cpu")
+_tokenizer = T5Tokenizer.from_pretrained("sunny0320/meeting-notes-cleaner-v3")
+_mm_model = T5ForConditionalGeneration.from_pretrained("sunny0320/meeting-notes-cleaner-v3").to(_device)
+_mm_model.eval()
+gc.collect()
+print("flan-t5-base ready.")
+
+SHORTHAND = {
+    'asap', 'eod', 'b4', 'tmrw', 'lst', 'nite', 'wk', 'pls', 'plz',
+    'w/', 'w/o', 'dept', 'mgmt', 'ur', 'thru', 'pct',
+    'brken', 'rdy', 'waitng', 'intgration', 'expirng'
+}
+
+def is_messy(text):
+    words = text.lower().split()
+    shorthand_count = sum(1 for w in words if w in SHORTHAND)
+    has_number_typo = bool(re.search(r'\d[a-z]|[a-z]\d', text))
+    return shorthand_count >= 2 or has_number_typo
+
+def post_process(text):
+    text = re.sub(r'\bhas crashes\b', 'has crashed', text)
+    text = re.sub(r'\bbeen review\b', 'been reviewed', text)
+    text = re.sub(r'\bProductionapi\b', 'Production API', text)
+    text = re.sub(r'([a-z])(API|SSL|DB|UI|UX|HR|QA|CEO|CTO|CFO)', r'\1 \2', text)
+    text = re.sub(r'\. ([a-z])', lambda m: '. ' + m.group(1).upper(), text)
+    return text
+
+def ml_clean(text):
+    prompt = f"summarize meeting notes: {text}"
+    inputs = _tokenizer(prompt, return_tensors="pt", max_length=128, truncation=True).to(_device)
+    with torch.no_grad():
+        outputs = _mm_model.generate(
+            **inputs, max_new_tokens=64, num_beams=4,
+            no_repeat_ngram_size=3, early_stopping=True, repetition_penalty=1.5
+        )
+    cleaned = _tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+    if not cleaned or len(cleaned) < 5:
+        cleaned = text
+    cleaned = post_process(cleaned)
+    cleaned = cleaned[0].upper() + cleaned[1:] if cleaned else cleaned
+    if cleaned and not cleaned.endswith(('.', '!', '?')):
+        cleaned += '.'
+    gc.collect()
+    return cleaned
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 security = HTTPBearer()
@@ -299,7 +349,7 @@ async def events(token: str = Query(...)):
 @app.post("/meetings/process", tags=["Meetings"])
 def process_notes(req: ProcessNotesRequest, current=Depends(require_manager)):
     items_raw = split_notes(req.notes)
-    items = [{"text": clean_item(r), "priority": flag_priority(r),
+    items = [{"text": ml_clean(r) if is_messy(r) else (r.strip() + "." if not r.strip().endswith((".", "!", "?")) else r.strip()), "priority": flag_priority(r),
               "owner_id": None, "owner_name": None, "status": "todo"} for r in items_raw]
     items.sort(key=lambda x: {"high":0,"medium":1,"low":2}[x["priority"]])
     return {"title": req.title, "points": items}
