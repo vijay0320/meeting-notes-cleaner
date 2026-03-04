@@ -199,6 +199,8 @@ def ml_clean(text):
     if not cleaned or len(cleaned) < 5:
         cleaned = text
     cleaned = post_process(cleaned)
+    # Fix missing spaces between words merged by ML model
+    cleaned = re.sub(r'([a-z])([A-Z][a-z])', r'\1 \2', cleaned)
     cleaned = cleaned[0].upper() + cleaned[1:] if cleaned else cleaned
     if cleaned and not cleaned.endswith(('.', '!', '?')):
         cleaned += '.'
