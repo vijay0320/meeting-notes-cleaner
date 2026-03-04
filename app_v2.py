@@ -58,7 +58,7 @@ MEDIUM_KEYWORDS = [
     "schedule", "decide", "will", "assigned", "pending", "waiting", "requested",
     "needs", "required", "sign off", "approval", "investigate", "prepare",
     "not set up", "starts monday", "set up", "slow query", "affecting",
-    "optimize", "streamline", "simplify", "update", "adjust", "explore"
+    "optimize", "streamline", "simplify", "update", "adjust", "explore", "analysis", "run another", "also run"
 ]
 
 def flag_priority(text):
