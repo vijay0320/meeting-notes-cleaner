@@ -4,8 +4,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 device = torch.device("cpu")
-tokenizer = T5Tokenizer.from_pretrained("my_meeting_model_v2")
-model = T5ForConditionalGeneration.from_pretrained("my_meeting_model_v2").to(device)
+tokenizer = T5Tokenizer.from_pretrained("sunny0320/meeting-notes-cleaner-v2")
+model = T5ForConditionalGeneration.from_pretrained("sunny0320/meeting-notes-cleaner-v2").to(device)
 model.eval()
 
 HIGH_KEYWORDS = ["asap", "urgent", "critical", "blocker", "must", "immediately", "deadline", "overdue", "risk", "high priority"]
