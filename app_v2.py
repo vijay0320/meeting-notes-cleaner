@@ -96,7 +96,7 @@ def detect_owner(text, speaker=None):
     return None
 
 ACTION_VERBS = [
-    "will", "need to", "needs to", "must", "should", "going to",
+    "will", "need to", "needs to", "must", "should", "going to", "also",
     "plan to", "committed to", "agreed to", "prepare", "review",
     "investigate", "fix", "update", "send", "complete", "submit",
     "analyze", "present", "require", "estimate", "shift", "adjust",
