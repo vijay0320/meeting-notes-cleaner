@@ -16,7 +16,6 @@ https://youtu.be/F28eYMKy2pA
 
 ![MeetingMind Demo](assets/demo.gif)
 
-![MeetingMind Demo](assets/demo.gif)
 
 ---
 
