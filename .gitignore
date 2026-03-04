@@ -18,3 +18,8 @@ my_meeting_model/
 my_meeting_model_v2/
 meetingmind/.env
 **/.env
+meetingmind/meetingmind.db
+README.md.bak
+fix_readme.py
+assets/demo.mp4
+meeting_mind.mov
