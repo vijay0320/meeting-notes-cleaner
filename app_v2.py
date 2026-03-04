@@ -61,8 +61,12 @@ MEDIUM_KEYWORDS = [
     "optimize", "streamline", "simplify", "update", "adjust", "explore", "analysis", "run another", "also run"
 ]
 
+LOW_SIGNALS = ["at some point", "eventually", "fun", "nice to have", "whenever", 
+               "someday", "in the future", "low priority", "not urgent", "no rush"]
+
 def flag_priority(text):
     t = text.lower()
+    if any(k in t for k in LOW_SIGNALS): return "low"
     if any(k in t for k in HIGH_KEYWORDS): return "high"
     elif any(k in t for k in MEDIUM_KEYWORDS): return "medium"
     return "low"
