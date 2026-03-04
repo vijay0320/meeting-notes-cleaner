@@ -16,3 +16,5 @@ meetings.db
 *.pdf
 my_meeting_model/
 my_meeting_model_v2/
+meetingmind/.env
+**/.env
