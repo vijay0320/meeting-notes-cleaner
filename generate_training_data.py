@@ -172,13 +172,50 @@ def make_messy(clean_text):
     text = text.replace('two', '2').replace('three', '3').replace('four', '4')
     return text.strip()
 
+IT_OPS = [
+    ("jenkins pipeline has been broken since this morning. all developers are blocked and cannot push to production. needs fix before standup.", "jenkins pipeline brken since morning all devs blocked cant push 2 prod needs fix b4 standup"),
+    ("office wifi has been down since yesterday. remote workers cannot connect to vpn. it team needs to resolve immediately.", "office wifi down since ystrday remote workers cant connect 2 vpn it team needs 2 sort this out asap"),
+    ("laptop provisioning for 3 new starters is incomplete. they cannot work. it team to complete setup by end of day.", "laptop provisioning for 3 new starters incomplete they cant work it team complete setup by eod"),
+    ("vpn certificate expired this morning. entire remote team locked out. it to renew and push update immediately.", "vpn cert expired this morning entire remote team locked out it renew and push update asap"),
+    ("zoom license for enterprise account not renewed. all hands meeting tomorrow at risk. it to renew today.", "zoom license for enterprise account not renewed all hands meeting tmrw at risk it renew today"),
+    ("shared drive permissions broken after migration. team cannot access files. it team to fix access controls.", "shared drive perms broken after migration team cant access files it team fix access controls"),
+    ("monitoring alerts not firing for production errors. team flying blind. devops to fix alerting pipeline asap.", "monitoring alerts not firing for prod errors team flying blind devops fix alerting pipeline asap"),
+    ("backup job failing silently for 2 weeks. no backups taken. devops to investigate and restore backup process.", "backup job failing silently for 2wks no backups taken devops investigate and restore backup process"),
+]
+
+NAMES = [
+    ("sarah has not sent the client proposal after 4 days. client is waiting and getting impatient. needs to be sent today.", "sarah still hasnt sent the client proposal its been 4 days client is waiting getting impatient"),
+    ("john will fix the authentication bug before end of day. blocking qa team from testing.", "john will fix the auth bug b4 eod blocking qa team frm testing"),
+    ("priya is blocked on the api spec and needs it immediately or the sprint is at risk.", "priya blocked on api spec needs it asap sprint at risk"),
+    ("mike needs to review the pull request by tomorrow. it has been waiting for 3 days.", "mike needs 2 review the pr by tmrw its been waiting 3 days"),
+    ("lisa has not updated the project status in jira for 2 weeks. manager to follow up.", "lisa hasnt updated project status in jira for 2wks manager follow up"),
+    ("david is assigned to investigate the memory leak in the payment service. due friday.", "david assigned 2 investigate memory leak in payment service due fri"),
+    ("anna needs to complete the ux mockups before the client demo on thursday.", "anna needs 2 complete ux mockups b4 client demo on thu"),
+    ("tom will present q4 headcount plan to leadership by end of week.", "tom will present q4 headcount plan 2 leadership by end of wk"),
+    ("raj needs to finalize the q4 roadmap before planning session on monday.", "raj needs 2 finalize q4 roadmap b4 planning session monday"),
+    ("emma still has not responded to the vendor about contract renewal. deadline is friday.", "emma still hasnt responded 2 vendor about contract renewal deadline is fri"),
+]
+
+QUARTERS = [
+    ("q1 budget review has not been completed. finance team to finalize by end of month.", "q1 budget review not completed finance team finalize by end of month"),
+    ("q2 performance reviews are overdue. all managers to submit by friday.", "q2 perf reviews overdue all managers submit by fri"),
+    ("q3 roadmap needs sign off from leadership. product team to present by thursday.", "q3 roadmap needs sign off from leadership product team present by thu"),
+    ("q4 headcount plan not submitted to hr yet. managers need to fill out forms by end of week or lose budget.", "q4 headcount plan not submitted to hr yet managers need 2 fill out forms by end of this wk or lose budget"),
+    ("q1 okrs have not been set for 3 teams. leadership to follow up before end of january.", "q1 okrs not set for 3 teams leadership follow up b4 end of january"),
+    ("q2 engineering hiring plan needs cto approval before offers can go out.", "q2 eng hiring plan needs cto approval b4 offers can go out"),
+    ("q3 marketing budget overspent by 20 percent. cmo to review and reforecast.", "q3 marketing budget overspent by 20pct cmo review and reforecast"),
+    ("q4 planning session not scheduled yet. chief of staff to book by end of week.", "q4 planning session not scheduled yet chief of staff book by end of wk"),
+]
+
+
+
 # ─── Generate dataset ──────────────────────────────────────────────────────────
 
 def generate_dataset():
     all_pairs = []
 
     # Use original pairs from all domains
-    all_templates = ENGINEERING + PRODUCT + FINANCE + HR + MARKETING
+    all_templates = ENGINEERING + PRODUCT + FINANCE + HR + MARKETING + IT_OPS + NAMES + QUARTERS
 
     # Add original pairs
     for clean, messy in all_templates:
@@ -216,3 +253,4 @@ def generate_dataset():
 
 if __name__ == "__main__":
     generate_dataset()
+
