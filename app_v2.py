@@ -1,6 +1,7 @@
 """
 Meeting Notes Cleaner v2
-Features: flan-t5-small ML cleaning, owner detection, action item tracker (SQLite), priority engine, meeting health score
+Full pipeline: transcript extraction → messiness detection → ML cleaning → priority classification
+Model: fine-tuned flan-t5-base (sunny0320/meeting-notes-cleaner-v3)
 """
 
 import warnings
@@ -21,12 +22,12 @@ print("Loading Whisper model...")
 _whisper_model = whisper.load_model("base", device="cpu")
 print("Whisper ready.")
 
-print("Loading flan-t5 model from HuggingFace...")
+print("Loading flan-t5-base from HuggingFace...")
 _device = torch.device("cpu")
-_tokenizer = T5Tokenizer.from_pretrained("sunny0320/meeting-notes-cleaner-v2")
-_model = T5ForConditionalGeneration.from_pretrained("sunny0320/meeting-notes-cleaner-v2").to(_device)
+_tokenizer = T5Tokenizer.from_pretrained("sunny0320/meeting-notes-cleaner-v3")
+_model = T5ForConditionalGeneration.from_pretrained("sunny0320/meeting-notes-cleaner-v3").to(_device)
 _model.eval()
-print("flan-t5 ready.")
+print("flan-t5-base ready.")
 
 app = Flask(__name__, static_folder="static")
 DB = "meetings.db"
@@ -49,15 +50,16 @@ HIGH_KEYWORDS = [
     "asap", "urgent", "critical", "blocker", "block", "must", "immediately",
     "deadline", "overdue", "risk", "high priority", "eod", "end of today",
     "escalate", "broke", "broken", "down", "failing", "at risk",
-    "expires", "not started", "renew", "must fix", "before release"
+    "expires", "not started", "renew", "must fix", "before release",
+    "crashed", "crash", "outage", "emergency", "hotfix"
 ]
 MEDIUM_KEYWORDS = [
     "should", "need", "review", "follow up", "followup", "discuss", "plan",
     "schedule", "decide", "will", "assigned", "pending", "waiting", "requested",
-    "needs", "required", "sign off", "approval", "investigate",
-    "not set up", "starts monday", "set up", "slow query", "affecting", "deck not"
+    "needs", "required", "sign off", "approval", "investigate", "prepare",
+    "not set up", "starts monday", "set up", "slow query", "affecting",
+    "optimize", "streamline", "simplify", "update", "adjust", "explore"
 ]
-ACRONYMS = {"cto", "cfo", "ceo", "coo", "hr", "qa", "api", "ui", "ux"}
 
 def flag_priority(text):
     t = text.lower()
@@ -65,6 +67,7 @@ def flag_priority(text):
     elif any(k in t for k in MEDIUM_KEYWORDS): return "medium"
     return "low"
 
+ACRONYMS = {"cto", "cfo", "ceo", "coo", "hr", "qa", "api", "ui", "ux", "vp", "cro", "cmo"}
 TEAM_TOKENS = {"team", "lead", "manager", "director", "engineer", "designer",
                "devops", "dev", "qa", "cto", "ceo", "cfo", "hr", "legal",
                "marketing", "finance", "product", "backend", "frontend", "sales"}
@@ -72,7 +75,9 @@ TEAM_TOKENS = {"team", "lead", "manager", "director", "engineer", "designer",
 def format_owner(name):
     return " ".join(w.upper() if w.lower() in ACRONYMS else w.capitalize() for w in name.split())
 
-def detect_owner(text):
+def detect_owner(text, speaker=None):
+    if speaker and speaker.lower() not in {"unknown", "unassigned"}:
+        return format_owner(speaker)
     m = re.match(r'^([A-Za-z][a-z]+(?:\s+[A-Za-z][a-z]+)?)\s*[-:]', text)
     if m:
         candidate = m.group(1).strip()
@@ -85,25 +90,115 @@ def detect_owner(text):
         candidate = m.group(1)
         if candidate.lower() not in TEAM_TOKENS: return format_owner(candidate)
     for token in ["dev team", "devops", "backend team", "frontend team", "qa team",
-                  "marketing", "legal", "finance", "hr", "product team", "product manager",
+                  "marketing", "legal", "finance", "hr", "product team",
                   "sales team", "cto", "cfo", "ceo"]:
         if token in text.lower(): return format_owner(token)
     return None
 
+ACTION_VERBS = [
+    "will", "need to", "needs to", "must", "should", "going to",
+    "plan to", "committed to", "agreed to", "prepare", "review",
+    "investigate", "fix", "update", "send", "complete", "submit",
+    "analyze", "present", "require", "estimate", "shift", "adjust",
+    "optimize", "simplify", "streamline", "explore", "support", "add"
+]
+DEADLINE_WORDS = [
+    "week", "weeks", "days", "month", "friday", "monday", "tuesday",
+    "wednesday", "thursday", "before", "by", "deadline", "schedule",
+    "timeline", "next meeting", "launch"
+]
+SPEAKER_PATTERN = re.compile(r'^([A-Z][a-z]+):\s*(.+)$')
+
+def is_transcript(text):
+    lines = text.strip().split('\n')
+    speaker_lines = sum(1 for l in lines if SPEAKER_PATTERN.match(l.strip()))
+    return speaker_lines >= 3
+
+def has_action(text):
+    text_lower = text.lower()
+    has_verb = any(verb in text_lower for verb in ACTION_VERBS)
+    has_deadline = any(d in text_lower for d in DEADLINE_WORDS)
+    is_question = text.strip().endswith('?')
+    is_short = len(text.split()) < 6
+    return (has_verb or has_deadline) and not is_question and not is_short
+
+def normalize_pronouns(text, speaker):
+    text = re.sub(r"\bI'll\b", f"{speaker} will", text)
+    text = re.sub(r"\bI will\b", f"{speaker} will", text)
+    text = re.sub(r"\bI can\b", f"{speaker} can", text)
+    text = re.sub(r"\bI'd\b", f"{speaker} would", text)
+    text = re.sub(r"\bWe'll\b", "the team will", text)
+    text = re.sub(r"\bwe'll\b", "the team will", text)
+    text = re.sub(r"\bwe will\b", "the team will", text)
+    text = re.sub(r"\bwe need\b", "the team needs", text)
+    text = re.sub(r"\bwe may\b", "the team may", text)
+    text = re.sub(r"\bwe can\b", "the team can", text)
+    return text
+
+def extract_from_transcript(transcript):
+    lines = transcript.strip().split('\n')
+    action_items = []
+    seen = set()
+    for line in lines:
+        line = line.strip()
+        m = SPEAKER_PATTERN.match(line)
+        if m:
+            speaker = m.group(1)
+            text = m.group(2).strip()
+            if has_action(text):
+                normalized = normalize_pronouns(text, speaker)
+                key = normalized[:50].lower()
+                if key not in seen:
+                    seen.add(key)
+                    action_items.append((speaker, normalized))
+    return action_items
+
+SHORTHAND = {
+    'asap', 'eod', 'b4', 'tmrw', 'lst', 'nite', 'wk', 'pls', 'plz',
+    'w/', 'w/o', 'dept', 'mgmt', 'ur', 'thru', 'pct',
+    'brken', 'rdy', 'waitng', 'intgration', 'expirng'
+}
+
+def is_messy(text):
+    words = text.lower().split()
+    shorthand_count = sum(1 for w in words if w in SHORTHAND)
+    has_number_typo = bool(re.search(r'\d[a-z]|[a-z]\d', text))
+    return shorthand_count >= 2 or has_number_typo
+
+def post_process(text):
+    text = re.sub(r'\bhas crashes\b', 'has crashed', text)
+    text = re.sub(r'\bbeen review\b', 'been reviewed', text)
+    return text
+
 def ml_clean(text):
-    """Use flan-t5 to clean and rewrite a raw meeting note."""
-    prompt = f"Rewrite as a professional action item, fix typos, remove filler words: {text}"
+    prompt = f"summarize meeting notes: {text}"
     inputs = _tokenizer(prompt, return_tensors="pt", max_length=128, truncation=True).to(_device)
     with torch.no_grad():
-        outputs = _model.generate(**inputs, max_new_tokens=64)
+        outputs = _model.generate(
+            **inputs,
+            max_new_tokens=64,
+            num_beams=4,
+            no_repeat_ngram_size=3,
+            early_stopping=True,
+            repetition_penalty=1.5
+        )
     cleaned = _tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
-    # Fallback to basic clean if model returns empty or too short
     if not cleaned or len(cleaned) < 5:
         cleaned = text
+    cleaned = post_process(cleaned)
     cleaned = cleaned[0].upper() + cleaned[1:] if cleaned else cleaned
     if cleaned and not cleaned.endswith(('.', '!', '?')):
         cleaned += '.'
     return cleaned
+
+def smart_clean(text):
+    if is_messy(text):
+        return ml_clean(text)
+    else:
+        text = text.strip()
+        if text and not text.endswith(('.', '!', '?')):
+            text += '.'
+        return text
 
 def split_notes(raw_notes):
     lines = re.split(r'\n|\r\n', raw_notes)
@@ -118,15 +213,25 @@ def split_notes(raw_notes):
     return items
 
 def process_notes(raw_notes):
-    items = split_notes(raw_notes)
     results = []
-    for item in items:
-        results.append({
-            "text": ml_clean(item),
-            "priority": flag_priority(item),
-            "owner": detect_owner(item) or "Unassigned",
-            "status": "todo"
-        })
+    if is_transcript(raw_notes):
+        extracted = extract_from_transcript(raw_notes)
+        for speaker, text in extracted:
+            results.append({
+                "text": smart_clean(text),
+                "priority": flag_priority(text),
+                "owner": detect_owner(text, speaker) or "Unassigned",
+                "status": "todo"
+            })
+    else:
+        items = split_notes(raw_notes)
+        for item in items:
+            results.append({
+                "text": smart_clean(item),
+                "priority": flag_priority(item),
+                "owner": detect_owner(item) or "Unassigned",
+                "status": "todo"
+            })
     order = {"high": 0, "medium": 1, "low": 2}
     results.sort(key=lambda x: order[x["priority"]])
     return results
