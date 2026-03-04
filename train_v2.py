@@ -14,7 +14,7 @@ device = torch.device("cpu")
 print(f"Using device: {device}")
 print(f"Train: {len(train_data)} | Val: {len(val_data)}")
 
-model_name = "google/flan-t5-small"
+model_name = "google/flan-t5-base"
 tokenizer = T5Tokenizer.from_pretrained(model_name)
 model = T5ForConditionalGeneration.from_pretrained(model_name).to(device)
 
@@ -78,8 +78,8 @@ for epoch in range(EPOCHS):
 
     if avg_val < best_val_loss:
         best_val_loss = avg_val
-        model.save_pretrained("my_meeting_model_v2")
-        tokenizer.save_pretrained("my_meeting_model_v2")
+        model.save_pretrained("my_meeting_model_v3")
+        tokenizer.save_pretrained("my_meeting_model_v3")
         print(f"   Best model saved (val loss: {best_val_loss:.4f})")
 
 print(f"Done. Best val loss: {best_val_loss:.4f}")
