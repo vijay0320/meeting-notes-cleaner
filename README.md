@@ -1,6 +1,6 @@
 # Meeting Notes Cleaner
 
-> Fine-tuned flan-t5-small on the AMI Meeting Corpus to extract and prioritize action items from raw meeting transcripts. 99.7% classification accuracy. Built into a multi-user SaaS with real-time updates.
+> Fine-tuned flan-t5-base on the AMI Meeting Corpus with a smart pipeline: transcript extraction → messiness detection → ML cleaning → priority classification. 99.7% classification accuracy. Built into a multi-user SaaS with real-time updates.
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.1-orange)](https://pytorch.org)
@@ -28,43 +28,61 @@ Meeting notes are messy. Key action items get buried in transcripts, owners are 
 ## The ML Approach
 
 ### Model
-Fine-tuned `google/flan-t5-small` (80MB) on the AMI Meeting Corpus — 142 real meetings with human-annotated action items.
+Fine-tuned `google/flan-t5-base` (250MB) on the AMI Meeting Corpus + synthetic data — 1,547 training samples across 7 domains.
 
 ```
-Raw transcript → flan-t5-small → Cleaned action items
-"priya blocked on api needs it asap sprint at risk"
-→ "Priya: blocked on API spec, needs it ASAP or sprint is at risk."
+Raw input → Smart Pipeline → Structured action items
+
+Transcript mode:
+Meeting transcript → Speaker extraction → Pronoun normalization → Smart clean → Priority
+
+Raw notes mode:
+Messy shorthand → Messiness detection → ML clean (flan-t5-base) → Priority
 ```
 
-### Why flan-t5-small
-- Instruction-tuned baseline — already understands task framing
-- 80MB vs BART-large (400MB) — deployable locally, no API cost
-- Sufficient for extraction tasks with limited training data
-- Runs on CPU in ~1-2 seconds per meeting
+**Example — Messy notes:**
+```
+"api intgration still brken since lst nite deploy cant process any paymnts tmrw critical"
+→ "Api integration is broken since last night's deployment. Cannot process payments tomorrow. Critical fix needed."
+```
+
+**Example — Meeting transcript:**
+```
+"Jordan: I'll review the engineering backlog and see what changes we can make."
+→ [Jordan] "Jordan will review the engineering backlog and see what changes the team can make."
+```
+
+### Why flan-t5-base
+- 3x larger than flan-t5-small — better generalization on unseen text
+- Val loss 0.066 vs 1.13 (v1) — 17x improvement
+- Smart messiness detector routes clean text around ML — no hallucination on clean input
+- Runs on CPU in ~2-3 seconds per note
+- Hosted on HuggingFace: [sunny0320/meeting-notes-cleaner-v3](https://huggingface.co/sunny0320/meeting-notes-cleaner-v3)
 
 ### Data Pipeline
 
 ```
 AMI Corpus (142 meetings, 381 action items)
         ↓
-XML annotation parser (augment_data_v2.py)
+XML annotation parser + synthetic augmentation (generate_training_data.py)
         ↓
-Synthetic augmentation — 300 samples across 5 domains
-(engineering, product, marketing, finance, HR)
+1,547 samples across 7 domains
+(engineering, product, finance, HR, marketing, IT ops, names/owners)
         ↓
-Train/Val/Test split — 363 / 39 / 15
+Train/Val/Test split — 1,237 / 155 / 155
         ↓
-Fine-tune flan-t5-small — 5 epochs, CPU, ~20 mins on M1
+Fine-tune flan-t5-base — 12 epochs, T4 GPU (Google Colab), ~20 mins
         ↓
-my_meeting_model_v2/ (hosted on HuggingFace: sunny0320/meeting-notes-cleaner-v2)
+my_meeting_model_v3/ (hosted on HuggingFace: sunny0320/meeting-notes-cleaner-v3)
 ```
 
 ### Training Results
 
-| Version | Train Loss | Val Loss | Data |
-|---|---|---|---|
-| v1 | 1.73 | 2.60 | AMI only, 113 samples |
-| v2 | 0.76 | 1.13 | AMI + synthetic, 363 samples |
+| Version | Model | Train Loss | Val Loss | Data |
+|---|---|---|---|---|
+| v1 | flan-t5-small | 1.73 | 2.60 | AMI only, 113 samples |
+| v2 | flan-t5-small | 0.76 | 1.13 | AMI + synthetic, 363 samples |
+| v3 | flan-t5-base | 0.09 | **0.07** | AMI + synthetic, 1,547 samples |
 
 ---
 
@@ -90,6 +108,40 @@ Only misclassification: "q3 planning doc shared with the team" (predicted MEDIUM
 
 ```bash
 python benchmark.py  # reproduce results
+```
+
+---
+
+## Smart Processing Pipeline
+
+Two input modes supported:
+
+### Mode 1 — Raw Messy Notes
+```
+db migration script rdy waitng 4 approval 2 run on prod needs sign off b4 eod
+        ↓
+Messiness detector (shorthand count + typo patterns)
+        ↓ messy detected
+flan-t5-base ML cleaning
+        ↓
+"Database migration script is ready and waiting for approval to run on production. Needs sign off before end of day."
+        ↓
+Priority: HIGH | Owner: Unassigned
+```
+
+### Mode 2 — Meeting Transcript
+```
+Jordan: I'll review the engineering backlog before the next sprint planning session.
+        ↓
+Speaker extraction (regex pattern matching)
+        ↓
+Pronoun normalization ("I'll" → "Jordan will")
+        ↓
+Messiness detector → clean text detected → passthrough
+        ↓
+"Jordan will review the engineering backlog before the next sprint planning session."
+        ↓
+Priority: MEDIUM | Owner: Jordan
 ```
 
 ---
@@ -247,9 +299,14 @@ unzip ami_public_manual_1.6.2.zip -d ami_annotations
 # 2. Generate augmented training data
 python augment_data_v2.py
 
-# 3. Fine-tune (~20 mins on M1 CPU)
+# 3. Generate expanded training data (1,547 samples)
+python generate_training_data.py
+
+# 4. Fine-tune on Google Colab T4 GPU (~20 mins)
+# Upload train_flan_t5_base.ipynb to colab.research.google.com
+# Or fine-tune locally (~60 mins on M1)
 python train_v2.py
-# Saves to my_meeting_model_v2/
+# Saves to my_meeting_model_v3/
 ```
 
 ---
@@ -291,9 +348,10 @@ uvicorn meetingmind.main:app --port 8091 --host 127.0.0.1
 
 | Layer | Technology |
 |---|---|
-| Language Model | google/flan-t5-small (fine-tuned) |
+| Language Model | google/flan-t5-base (fine-tuned, v3) |
 | Audio | OpenAI Whisper base (local) |
-| Training | PyTorch 2.1 + HuggingFace Transformers |
+| Language Model v2 | google/flan-t5-small (fine-tuned, v2) |
+| Training | PyTorch 2.1 + HuggingFace Transformers + Google Colab T4 GPU |
 | Evaluation | ROUGE, Precision/Recall/F1 |
 | Backend | Flask + FastAPI |
 | Auth | JWT (python-jose) + bcrypt |
@@ -367,3 +425,4 @@ meeting-notes-cleaner/
 | v18.0 | Email notifications |
 | v19.0 — v21.0 | README updates, .gitattributes, ML-first rewrite |
 | v22.0 | Demo GIF + video added |
+| v23.0 | flan-t5-base fine-tuned (v3), smart pipeline (transcript extraction + messiness detection + ML cleaning), 1,547 training samples, val loss 0.07 |
