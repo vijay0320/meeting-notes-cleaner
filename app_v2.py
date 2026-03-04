@@ -19,7 +19,7 @@ import torch
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 
 print("Loading Whisper model...")
-_whisper_model = whisper.load_model("base", device="cpu")
+_whisper_model = whisper.load_model("tiny", device="cpu")
 print("Whisper ready.")
 
 print("Loading flan-t5-base from HuggingFace...")
@@ -27,6 +27,9 @@ _device = torch.device("cpu")
 _tokenizer = T5Tokenizer.from_pretrained("sunny0320/meeting-notes-cleaner-v3")
 _model = T5ForConditionalGeneration.from_pretrained("sunny0320/meeting-notes-cleaner-v3").to(_device)
 _model.eval()
+# Memory optimization for cloud deployment
+import gc
+gc.collect()
 print("flan-t5-base ready.")
 
 app = Flask(__name__, static_folder="static")
@@ -208,6 +211,7 @@ def ml_clean(text):
     cleaned = cleaned[0].upper() + cleaned[1:] if cleaned else cleaned
     if cleaned and not cleaned.endswith(('.', '!', '?')):
         cleaned += '.'
+    gc.collect()
     return cleaned
 
 def smart_clean(text):
